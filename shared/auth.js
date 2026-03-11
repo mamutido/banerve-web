@@ -19,7 +19,7 @@ export function saveSession(session) {
 
 export function clearSession() {
   localStorage.removeItem('banerve_session');
-  window.location.href = '/login.html';
+  window.location.href = './login.html';
 }
 
 // Обновить токен через refresh_token
