@@ -1,0 +1,2805 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BANERVE Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./shared/panel.css">
+  <style>
+    /* index.html — page header variant */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .page-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    .page-title span { color: var(--accent); }
+
+    /* form-card wider in index */
+    .form-card { max-width: 640px; padding: 32px; }
+    .form-title { font-size: 20px; margin-bottom: 24px; padding-bottom: 16px; }
+    .form-group { margin-bottom: 20px; }
+    label { font-size: 12px; margin-bottom: 8px; }
+    input, select, textarea { padding: 12px 14px; }
+    .form-row { gap: 16px; }
+    .btn { padding: 12px 24px; letter-spacing: 0.3px; }
+    .file-upload { padding: 32px; }
+    .file-upload-icon { font-size: 32px; }
+    .file-upload-text { font-size: 14px; }
+    .file-upload-name { font-size: 13px; margin-top: 8px; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 32px; right: 32px;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 14px; font-weight: 600;
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+      max-width: 320px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: var(--success); color: #000; }
+    .toast.error { background: var(--error); color: #fff; }
+
+    /* table-wrap without border/bg (index uses inline cards) */
+    .table-wrap { overflow-x: auto; }
+    th { padding: 10px 14px; }
+    td { padding: 14px; }
+    .loading { text-align: center; padding: 40px; color: var(--text2); font-family: 'Space Mono', monospace; font-size: 13px; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 32px;
+      width: 560px; max-width: 95vw; max-height: 90vh;
+      overflow-y: auto; position: relative;
+    }
+    .modal-title {
+      font-size: 18px; font-weight: 700;
+      margin-bottom: 24px; padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-close {
+      cursor: pointer; font-size: 20px; line-height: 1;
+      background: none; border: none; color: var(--text2);
+      padding: 4px 8px; border-radius: 4px;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface2); }
+    .modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+
+    /* Confirm dialog */
+    .confirm-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8); z-index: 300;
+      align-items: center; justify-content: center;
+    }
+    .confirm-overlay.show { display: flex; }
+    .confirm-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px;
+      width: 360px; text-align: center;
+    }
+    .confirm-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .confirm-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+    .confirm-actions { display: flex; gap: 12px; justify-content: center; }
+
+    /* Language Picker */
+    .lang-picker { position: relative; }
+    .lang-trigger {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+      min-height: 42px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 12px; cursor: pointer; transition: border-color 0.15s;
+    }
+    .lang-trigger:hover { border-color: #555; }
+    .lang-trigger.open { border-color: var(--accent); }
+    .lang-trigger-placeholder { font-size: 13px; color: var(--text2); pointer-events: none; }
+    .lang-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(232,255,77,0.15); color: var(--accent);
+      border: 1px solid rgba(232,255,77,0.3);
+      border-radius: 4px; padding: 2px 7px;
+      font-size: 12px; font-family: 'Space Mono', monospace;
+    }
+    .lang-tag-remove { cursor: pointer; opacity: 0.6; margin-left: 2px; font-size: 13px; }
+    .lang-tag-remove:hover { opacity: 1; }
+    .lang-dropdown {
+      display: none; position: absolute;
+      top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px; z-index: 150;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .lang-dropdown.open { display: block; }
+    .lang-search { width: 100%; margin-bottom: 8px; }
+    .lang-grid { display: flex; flex-wrap: wrap; gap: 4px; max-height: 180px; overflow-y: auto; }
+    .lang-btn {
+      padding: 4px 10px; border-radius: 4px;
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text2); font-size: 12px; font-family: 'Space Mono', monospace;
+      cursor: pointer; transition: all 0.12s; white-space: nowrap;
+    }
+    .lang-btn:hover { border-color: #555; color: var(--text); }
+    .lang-btn.selected { background: rgba(232,255,77,0.15); border-color: rgba(232,255,77,0.4); color: var(--accent); }
+    .lang-show-all {
+      font-size: 11px; color: var(--accent); cursor: pointer;
+      background: none; border: none; padding: 6px 0 0;
+      font-family: 'Space Mono', monospace;
+      text-decoration: underline; display: block;
+    }
+    .lang-show-all:hover { opacity: 0.8; }
+
+    /* City autocomplete */
+    .city-tags-wrap {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 10px;
+      display: flex; flex-wrap: wrap; gap: 6px;
+      align-items: center; cursor: text; transition: border-color 0.15s;
+    }
+    .city-tags-wrap:focus-within { border-color: var(--accent); }
+    .city-tags { display: contents; }
+    .city-tag {
+      display: flex; align-items: center; gap: 5px;
+      background: rgba(232,255,77,0.15); color: var(--accent);
+      border: 1px solid rgba(232,255,77,0.3);
+      border-radius: 5px; padding: 3px 8px;
+      font-size: 12px; font-family: 'Space Mono', monospace; white-space: nowrap;
+    }
+    .city-tag-remove { cursor: pointer; opacity: 0.6; font-size: 14px; line-height: 1; }
+    .city-tag-remove:hover { opacity: 1; }
+    .city-tags-wrap input {
+      background: transparent; border: none; padding: 4px 0;
+      flex: 1; min-width: 140px; font-size: 14px; color: var(--text); outline: none;
+    }
+    .city-dropdown { position: relative; z-index: 200; }
+    .city-dropdown-inner {
+      position: absolute; top: 4px; left: 0; right: 0;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .city-option {
+      padding: 10px 14px; cursor: pointer; font-size: 13px;
+      border-bottom: 1px solid var(--border); transition: background 0.1s;
+    }
+    .city-option:last-child { border-bottom: none; }
+    .city-option:hover, .city-option.selected { background: var(--surface); }
+    .city-option-name { font-weight: 600; }
+    .city-option-detail { font-size: 11px; color: var(--text2); margin-top: 2px; font-family: 'Space Mono', monospace; }
+    .city-loading { padding: 12px 14px; font-size: 12px; color: var(--text2); font-family: 'Space Mono', monospace; }
+
+    /* Toggle switch */
+    .toggle-wrap { position: relative; display: inline-flex; align-items: center; }
+    .toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      width: 36px; height: 20px; background: var(--border);
+      border-radius: 10px; cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle-input:checked + .toggle-track { background: var(--accent); }
+    .toggle-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 14px; height: 14px; background: #fff; border-radius: 50%;
+      transition: transform 0.2s; pointer-events: none;
+    }
+    .toggle-input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); }
+    #match-lang-hint { transition: opacity 0.2s; }
+  </style>
+</head>
+<body>
+
+<header id="app-header"></header>
+
+<div class="layout">
+  <nav>
+    <div class="nav-section" style="margin-top:8px; margin-bottom:16px;">Участники</div>
+    <div class="nav-item" data-page="publishers">
+      <span class="nav-icon">🏢</span> Publishers
+    </div>
+    <div class="nav-item" data-page="advertisers">
+      <span class="nav-icon">📣</span> Advertisers
+    </div>
+    <div class="nav-item" data-page="apps">
+      <span class="nav-icon">📱</span> Apps
+    </div>
+
+    <div class="divider" style="margin: 16px 20px;"></div>
+
+    <div class="nav-section" style="margin-bottom:16px;">Реклама</div>
+    <div class="nav-item" data-page="contracts">
+      <span class="nav-icon">📄</span> Contracts
+    </div>
+    <div class="nav-item" data-page="creatives">
+      <span class="nav-icon">🎨</span> Creatives
+    </div>
+    <div class="nav-item" data-page="targeting">
+      <span class="nav-icon">🎯</span> Targeting
+    </div>
+
+    <div class="divider" style="margin: 16px 20px;"></div>
+
+    <div class="nav-section" style="margin-bottom:16px;">Справочники</div>
+    <div class="nav-item" data-page="devices">
+      <span class="nav-icon">📱</span> Устройства
+    </div>
+
+    <div class="divider" style="margin: 16px 20px;"></div>
+
+    <div class="nav-section" style="margin-bottom:16px;">Шаблоны</div>
+    <div class="nav-item" data-page="templates">
+      <span class="nav-icon">📋</span> Таргетинг
+    </div>
+
+    <div class="divider" style="margin: 16px 20px;"></div>
+
+    <div class="nav-section" style="margin-bottom:16px;">Финансы</div>
+    <a href="stats.html" class="nav-item" style="text-decoration:none;">
+      <span class="nav-icon">📊</span> Статистика
+    </a>
+    <a href="transactions.html" class="nav-item" style="text-decoration:none;">
+      <span class="nav-icon">💳</span> Transactions
+    </a>
+  </nav>
+
+  <main>
+
+    <!-- PUBLISHERS -->
+    <div class="page active" id="page-publishers">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Publishers <span>·</span></div>
+          <div style="font-size:13px; color:var(--text2); margin-top:4px;">Владельцы приложений</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:32px; align-items:start;">
+        <div>
+          <div class="form-card">
+            <div class="form-title">Добавить publisher</div>
+            <div class="form-group">
+              <label>Название</label>
+              <input type="text" id="pub-name" placeholder="Mikhail Mamutido">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="pub-email" placeholder="hello@mamutido.com">
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea id="pub-notes" placeholder="Заметки..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addPublisher()">Добавить →</button>
+          </div>
+        </div>
+
+        <div>
+          <div id="publishers-list" class="loading">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADVERTISERS -->
+    <div class="page" id="page-advertisers">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Advertisers <span>·</span></div>
+          <div style="font-size:13px; color:var(--text2); margin-top:4px;">Рекламодатели</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:32px; align-items:start;">
+        <div>
+          <div class="form-card">
+            <div class="form-title">Добавить advertiser</div>
+            <div class="form-group">
+              <label>Название / Имя</label>
+              <input type="text" id="adv-name" placeholder="Café Buenos Aires">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="adv-email" placeholder="contact@cafe.com">
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea id="adv-notes" placeholder="Заметки..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addAdvertiser()">Добавить →</button>
+          </div>
+        </div>
+
+        <div>
+          <div id="advertisers-list" class="loading">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPS -->
+    <div class="page" id="page-apps">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Apps <span>·</span></div>
+          <div style="font-size:13px; color:var(--text2); margin-top:4px;">Приложения publishers</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:32px; align-items:start;">
+        <div>
+          <div class="form-card">
+            <div class="form-title">Добавить приложение</div>
+            <div class="form-group">
+              <label>Publisher</label>
+              <select id="app-publisher"></select>
+            </div>
+            <div class="form-group">
+              <label>App ID (захардкожен в SDK)</label>
+              <input type="text" id="app-appid" placeholder="com.mamutido.scrolang">
+            </div>
+            <div class="form-group">
+              <label>Название</label>
+              <input type="text" id="app-name" placeholder="Scrolang Reader">
+            </div>
+            <div class="form-group">
+              <label>Форматы рекламы</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;" id="formats-check">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="banner_static"> Статичный баннер
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="banner_animated"> Анимированный
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="audio"> Аудио
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="video"> Видео
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Устройства</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;" id="devices-check">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="phone"> Phone
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="watch"> Watch
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="tablet"> Tablet
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea id="app-notes" placeholder="Заметки об приложении..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addApp()">Добавить →</button>
+          </div>
+        </div>
+
+        <div>
+          <div id="apps-list" class="loading">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTRACTS -->
+    <div class="page" id="page-contracts">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Contracts <span>·</span></div>
+          <div style="font-size:13px; color:var(--text2); margin-top:4px;">Договоры между рекламодателями и publishers</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:32px; align-items:start;">
+        <div>
+          <div class="form-card">
+            <div class="form-title">Новый контракт</div>
+            <div class="form-group">
+              <label>Advertiser</label>
+              <select id="contract-advertiser"></select>
+            </div>
+            <div class="form-group">
+              <label>Publisher</label>
+              <select id="contract-publisher"></select>
+            </div>
+            <div class="form-group">
+              <label>Бюджет (USD)</label>
+              <input type="number" id="contract-budget" placeholder="100">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Min CPM</label>
+                <input type="number" id="contract-mincpm" placeholder="1.00" step="0.01">
+              </div>
+              <div class="form-group">
+                <label>Max CPM</label>
+                <input type="number" id="contract-maxcpm" placeholder="5.00" step="0.01">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Начало</label>
+                <input type="date" id="contract-start">
+              </div>
+              <div class="form-group">
+                <label>Конец</label>
+                <input type="date" id="contract-end">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea id="contract-notes" placeholder="Заметки..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addContract()">Создать контракт →</button>
+          </div>
+        </div>
+
+        <div>
+          <div id="contracts-list" class="loading">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CREATIVES -->
+    <div class="page" id="page-creatives">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Creatives <span>·</span></div>
+          <div style="font-size:13px; color:var(--text2); margin-top:4px;">Рекламные материалы</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:32px; align-items:start;">
+        <div>
+          <div class="form-card">
+            <div class="form-title">Новый креатив</div>
+            <div class="form-group">
+              <label>Контракт</label>
+              <select id="creative-contract" onchange="onContractChange(this)"></select>
+              <div id="contract-info" style="margin-top:6px; font-size:12px; color:var(--text2); font-family:'Space Mono',monospace;"></div>
+            </div>
+            <div class="form-group">
+              <label>Приложение</label>
+              <select id="creative-app"></select>
+            </div>
+            <div class="form-group">
+              <label>Название</label>
+              <input type="text" id="creative-name" placeholder="Баннер для Scrolang">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Тип рекламы</label>
+                <select id="creative-format" onchange="onCreativeFormatChange()">
+                  <option value="banner_static">Статичный баннер</option>
+                  <option value="banner_animated">Анимированный баннер</option>
+                  <option value="banner_dynamic">Динамический баннер</option>
+                  <option value="audio">Аудио</option>
+                  <option value="scrolling_text">Прокрутка текста</option>
+                  <option value="video">Видео</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Устройство</label>
+                <select id="creative-device" onchange="onCreativeDeviceChange()">
+                  <option value="phone">📱 Телефон</option>
+                  <option value="watch">⌚ Часы</option>
+                  <option value="tablet">🗒 Планшет</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row" id="field-format-size">
+              <div class="form-group">
+                <label>Формат баннера</label>
+                <select id="creative-format-size">
+                  <option value="">— выбери устройство —</option>
+                </select>
+                <div id="format-size-hint" style="font-size:11px;color:var(--text2);margin-top:4px;"></div>
+              </div>
+              <div class="form-group">
+                <label>Язык креатива</label>
+                <select id="creative-language">
+                  <option value="">— Любой (картинка/универсальный) —</option>
+                  <option value="ru">Русский (ru)</option>
+                  <option value="es">Español (es)</option>
+                  <option value="en">English (en)</option>
+                  <option value="de">Deutsch (de)</option>
+                  <option value="fr">Français (fr)</option>
+                  <option value="ar">العربية (ar)</option>
+                  <option value="uz">O'zbek (uz)</option>
+                  <option value="tr">Türkçe (tr)</option>
+                  <option value="zh">中文 (zh)</option>
+                  <option value="pt">Português (pt)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>CPM Rate (USD)</label>
+              <input type="number" id="creative-cpm" placeholder="2.50" step="0.01">
+            </div>
+            <div class="form-group" id="field-ad-text" style="display:none;">
+              <label>Рекламный текст</label>
+              <textarea id="creative-ad-text" placeholder="Текст который будет прокручиваться..." style="min-height:100px;"></textarea>
+            </div>
+            <div class="form-group" id="field-media">
+              <label id="label-media">Медиафайл</label>
+              <div class="file-upload" id="file-drop">
+                <input type="file" id="creative-file" accept="image/*,audio/*,video/*" onchange="onFileSelect(this)">
+                <div class="file-upload-icon">📁</div>
+                <div class="file-upload-text">Нажми или перетащи файл</div>
+                <div class="file-upload-name" id="file-name"></div>
+              </div>
+            </div>
+            <div class="form-group" id="field-banner" style="display:none;">
+              <label>Баннер (изображение)</label>
+              <div class="file-upload">
+                <input type="file" id="creative-banner" accept="image/*" onchange="onBannerSelect(this)">
+                <div class="file-upload-icon">🖼</div>
+                <div class="file-upload-text">Баннер для показа во время воспроизведения</div>
+                <div class="file-upload-name" id="banner-name"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea id="creative-notes" placeholder="Заметки о креативе..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addCreative()" id="btn-add-creative">Загрузить и сохранить →</button>
+          </div>
+        </div>
+
+        <div>
+          <div id="creatives-list" class="loading">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARGETING -->
+    <div class="page" id="page-targeting">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Targeting <span>·</span></div>
+          <div style="font-size:13px; color:var(--text2); margin-top:4px;">Параметры таргетинга для креативов</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:32px; align-items:start;">
+        <div>
+          <div class="form-card">
+            <div class="form-title">Настроить таргетинг</div>
+            <div class="form-group">
+              <label>Креатив</label>
+              <select id="targeting-creative" onchange="onTargetingCreativeChange(this)"></select>
+              <div id="targeting-creative-info" style="margin-top:6px; font-size:12px; color:var(--text2); font-family:'Space Mono',monospace;"></div>
+            </div>
+            <div class="form-group">
+              <label style="display:flex;align-items:center;justify-content:space-between;">
+                <span>Основной язык интерфейса</span>
+                <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:12px;cursor:pointer;font-weight:400;">
+                  <span style="color:var(--text2);">Язык креатива = язык интерфейса</span>
+                  <div class="toggle-wrap">
+                    <input type="checkbox" id="targeting-match-lang" checked class="toggle-input">
+                    <div class="toggle-track"><div class="toggle-thumb"></div></div>
+                  </div>
+                </label>
+              </label>
+              <div class="lang-picker" id="lp-primary"></div>
+              <div id="match-lang-hint" style="font-size:11px;color:var(--text2);margin-top:5px;">
+                ✓ Реклама будет показана только если язык текста в баннере совпадает с языком интерфейса пользователя
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Дополнительные языки в системе</label>
+              <div class="lang-picker" id="lp-secondary"></div>
+            </div>
+            <div class="form-group">
+              <label>Города</label>
+              <div class="city-tags-wrap" id="city-tags-wrap">
+                <div class="city-tags" id="city-tags"></div>
+                <input type="text" id="targeting-cities-input" placeholder="Начни вводить город..." autocomplete="off" oninput="onCityInput(this)" onkeydown="onCityKey(event)">
+              </div>
+              <div class="city-dropdown" id="city-dropdown"></div>
+              <input type="hidden" id="targeting-cities">
+            </div>
+            <div class="form-group">
+              <label>Погода</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="sunny" class="weather-cb"> ☀️ Солнечно
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="rain" class="weather-cb"> 🌧 Дождь
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="snow" class="weather-cb"> ❄️ Снег
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="cloudy" class="weather-cb"> ☁️ Облачно
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="wind" class="weather-cb"> 💨 Ветер
+                </label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Темп. мин (°C)</label>
+                <input type="number" id="targeting-tempmin" placeholder="-∞">
+              </div>
+              <div class="form-group">
+                <label>Темп. макс (°C)</label>
+                <input type="number" id="targeting-tempmax" placeholder="+∞">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Изучает языки (OR)</label>
+              <div class="lang-picker" id="lp-learning"></div>
+            </div>
+            <div class="form-group">
+              <label>Устройства</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="phone" class="device-cb"> Phone</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="watch" class="device-cb"> Watch</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="tablet" class="device-cb"> Tablet</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Класс устройства</label>
+              <select id="targeting-device-tier">
+                <option value="">Любой</option>
+                <option value="flagship">Флагман</option>
+                <option value="mid">Средний</option>
+                <option value="budget">Бюджетный</option>
+              </select>
+            </div>
+
+            <div style="background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:16px;">
+              <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:12px;">Смартфоны — по типу</div>
+              <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" id="targeting-foldable"> 📱 Только складные</label>
+              </div>
+              <label style="display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:6px;">Размер экрана</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="small" class="screen-cb"> Маленький</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="normal" class="screen-cb"> Нормальный</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="large" class="screen-cb"> Большой</label>
+              </div>
+            </div>
+
+            <div style="background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:16px;">
+              <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:12px;">Конкретные модели</div>
+              <div class="form-group" style="margin-bottom:10px;">
+                <label>📱 Смартфоны</label>
+                <select id="targeting-phone-models" multiple style="height:80px;"></select>
+              </div>
+              <div class="form-group" style="margin-bottom:10px;">
+                <label>⌚ Часы</label>
+                <select id="targeting-watch-models" multiple style="height:60px;"></select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>🎧 Беспроводные наушники</label>
+                <select id="targeting-headphones-bt-models" multiple style="height:60px;"></select>
+              </div>
+              <div style="font-size:11px;color:var(--text2);margin-top:6px;">Ctrl/Cmd+клик для выбора нескольких</div>
+            </div>
+
+            <div class="form-group">
+              <label>Подключено / профиль</label>
+              <div style="display:flex; gap:16px; flex-wrap:wrap; margin-top:4px;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" id="targeting-headphones-wired"> 🎧 Проводные наушники</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" id="targeting-headphones"> 🎧 Любые наушники</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" id="targeting-watch"> ⌚ Часы</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" id="targeting-migrant"> 🌍 Мигрант</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" id="targeting-large-font"> 🔤 Крупный шрифт</label>
+              </div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:16px;">
+              <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:12px;">Память устройства</div>
+              <div class="form-row" style="margin-bottom:8px;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>RAM мин (GB)</label>
+                  <input type="number" id="targeting-ram-min" placeholder="—" min="1" max="64" step="1">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>RAM макс (GB)</label>
+                  <input type="number" id="targeting-ram-max" placeholder="—" min="1" max="64" step="1">
+                </div>
+              </div>
+              <div class="form-row" style="margin-bottom:0;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>Свободно мин (GB)</label>
+                  <input type="number" id="targeting-storage-min" placeholder="—" min="0" max="1024" step="1">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>Свободно макс (GB)</label>
+                  <input type="number" id="targeting-storage-max" placeholder="—" min="0" max="1024" step="1">
+                </div>
+              </div>
+              <div class="form-row" style="margin-bottom:0;margin-top:8px;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>Всего storage мин (GB)</label>
+                  <input type="number" id="targeting-storage-total-min" placeholder="—" min="0" max="2048" step="1">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>Всего storage макс (GB)</label>
+                  <input type="number" id="targeting-storage-total-max" placeholder="—" min="0" max="2048" step="1">
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Заряд батареи (%)</label>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                <input type="number" id="targeting-battery-min" placeholder="мин" min="0" max="100" step="1" style="width:100px;">
+                <span style="color:var(--text2);font-size:13px;">—</span>
+                <input type="number" id="targeting-battery-max" placeholder="макс" min="0" max="100" step="1" style="width:100px;">
+                <span style="color:var(--text2);font-size:12px;font-family:'Space Mono',monospace;">напр. 0–20 для рекламы зарядок</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Время с</label>
+                <input type="time" id="targeting-time-from" step="1800">
+              </div>
+              <div class="form-group">
+                <label>Время до</label>
+                <input type="time" id="targeting-time-to" step="1800">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Дни недели (пусто = все)</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="mon" class="day-cb"> Пн</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="tue" class="day-cb"> Вт</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="wed" class="day-cb"> Ср</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="thu" class="day-cb"> Чт</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="fri" class="day-cb"> Пт</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="sat" class="day-cb"> Сб</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="sun" class="day-cb"> Вс</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea id="targeting-notes" placeholder="Заметки о таргетинге..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addTargeting()">Сохранить таргетинг →</button>
+          </div>
+        </div>
+
+        <div>
+          <div id="targeting-list" class="loading">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- DEVICES -->
+    <div class="page" id="page-devices">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Устройства <span>·</span></div>
+          <div style="font-size:13px; color:var(--text2); margin-top:4px;">Справочник моделей для таргетинга</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:32px; align-items:start;">
+        <div>
+          <div class="form-card">
+            <div class="form-title">Добавить модель</div>
+            <div class="form-group">
+              <label>Тип</label>
+              <select id="dev-type">
+                <option value="phone">📱 Смартфон</option>
+                <option value="watch">⌚ Умные часы</option>
+                <option value="headphones_bt">🎧 Беспроводные наушники</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Бренд</label>
+                <input type="text" id="dev-brand" placeholder="Apple">
+              </div>
+              <div class="form-group">
+                <label>Модель</label>
+                <input type="text" id="dev-model" placeholder="iPhone 15 Pro">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Год выпуска</label>
+                <input type="number" id="dev-year" placeholder="2024" min="2010" max="2030">
+              </div>
+              <div class="form-group">
+                <label>Сегмент</label>
+                <select id="dev-tier">
+                  <option value="flagship">Флагман</option>
+                  <option value="mid">Средний</option>
+                  <option value="budget">Бюджетный</option>
+                </select>
+              </div>
+            </div>
+            <div id="dev-phone-fields">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Экран (дюймы)</label>
+                  <input type="number" id="dev-screen-inches" placeholder="6.1" step="0.1" min="3" max="8">
+                </div>
+                <div class="form-group">
+                  <label>Размер экрана</label>
+                  <select id="dev-screen-size">
+                    <option value="small">Маленький (&lt;6")</option>
+                    <option value="normal" selected>Нормальный (6–6.7")</option>
+                    <option value="large">Большой (&gt;6.7")</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" id="dev-foldable"> Складной телефон
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea id="dev-notes" placeholder="Заметки..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addDevice()">Добавить →</button>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button class="btn btn-outline btn-sm" onclick="filterDevices('phone')" id="dev-filter-phone">📱 Смартфоны</button>
+            <button class="btn btn-outline btn-sm" onclick="filterDevices('watch')" id="dev-filter-watch">⌚ Часы</button>
+            <button class="btn btn-outline btn-sm" onclick="filterDevices('headphones_bt')" id="dev-filter-headphones_bt">🎧 Наушники</button>
+            <button class="btn btn-outline btn-sm" onclick="filterDevices('')" id="dev-filter-all">Все</button>
+          </div>
+          <div id="devices-list" class="loading">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEMPLATES -->
+    <div class="page" id="page-templates">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Шаблоны <span>·</span></div>
+          <div style="font-size:13px; color:var(--text2); margin-top:4px;">Сохранённые наборы параметров таргетинга</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:32px; align-items:start;">
+        <div>
+          <div class="form-card">
+            <div class="form-title">Новый шаблон</div>
+            <div class="form-group">
+              <label>Advertiser</label>
+              <select id="tmpl-advertiser"></select>
+            </div>
+            <div class="form-group">
+              <label>Название</label>
+              <input type="text" id="tmpl-name" placeholder="Русскоязычные в Буэнос-Айресе">
+            </div>
+            <div class="form-group">
+              <label>Основной язык</label>
+              <div class="lang-picker" id="tmpl-lp-primary"></div>
+            </div>
+            <div class="form-group">
+              <label>Дополнительные языки</label>
+              <div class="lang-picker" id="tmpl-lp-secondary"></div>
+            </div>
+            <div class="form-group">
+              <label>Изучает языки (OR)</label>
+              <div class="lang-picker" id="tmpl-lp-learning"></div>
+            </div>
+            <div class="form-group">
+              <label>Города</label>
+              <div class="city-tags-wrap" id="tmpl-city-tags-wrap">
+                <div class="city-tags" id="tmpl-city-tags"></div>
+                <input type="text" id="tmpl-cities-input" placeholder="Начни вводить город..." autocomplete="off"
+                  oninput="onCityInput(this, 'tmpl')" onkeydown="onCityKey(event, 'tmpl')">
+              </div>
+              <div class="city-dropdown" id="tmpl-city-dropdown"></div>
+            </div>
+            <div class="form-group">
+              <label>Устройства</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="phone" class="tmpl-device-cb"> Phone</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="watch" class="tmpl-device-cb"> Watch</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="tablet" class="tmpl-device-cb"> Tablet</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Класс устройства</label>
+              <select id="tmpl-device-tier">
+                <option value="">Любой</option>
+                <option value="flagship">Флагман</option>
+                <option value="mid">Средний</option>
+                <option value="budget">Бюджетный</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Подключено / профиль</label>
+              <div style="display:flex; gap:16px; flex-wrap:wrap; margin-top:4px;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" id="tmpl-headphones"> 🎧 Наушники</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" id="tmpl-watch"> ⌚ Часы</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" id="tmpl-migrant"> 🌍 Мигрант</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Погода</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="sunny" class="tmpl-weather-cb"> ☀️ Солнечно</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="rain" class="tmpl-weather-cb"> 🌧 Дождь</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="snow" class="tmpl-weather-cb"> ❄️ Снег</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="cloudy" class="tmpl-weather-cb"> ☁️ Облачно</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="wind" class="tmpl-weather-cb"> 💨 Ветер</label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Темп. мин (°C)</label><input type="number" id="tmpl-tempmin" placeholder="-∞"></div>
+              <div class="form-group"><label>Темп. макс (°C)</label><input type="number" id="tmpl-tempmax" placeholder="+∞"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Время с</label><input type="time" id="tmpl-time-from" step="1800"></div>
+              <div class="form-group"><label>Время до</label><input type="time" id="tmpl-time-to" step="1800"></div>
+            </div>
+            <div class="form-group">
+              <label>Дни недели (пусто = все)</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="mon" class="tmpl-day-cb"> Пн</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="tue" class="tmpl-day-cb"> Вт</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="wed" class="tmpl-day-cb"> Ср</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="thu" class="tmpl-day-cb"> Чт</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="fri" class="tmpl-day-cb"> Пт</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="sat" class="tmpl-day-cb"> Сб</label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;"><input type="checkbox" value="sun" class="tmpl-day-cb"> Вс</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea id="tmpl-notes" placeholder="Описание шаблона..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addTemplate()">Сохранить шаблон →</button>
+          </div>
+        </div>
+
+        <div>
+          <div id="templates-list" class="loading">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+
+
+
+<script type="module">
+// ─── Импорты ─────────────────────────────────────────────────────────────────
+import { initPage, db, uploadFile, fmt, fmtUSD, fmtDate } from './shared/auth.js';
+import { initNav, onPageEnter, setState, state, invalidateCache } from './shared/store.js';
+import { renderHeader, toast, openModal, closeModal, openConfirm, emptyState, skeleton, badge, copyToClipboard } from './shared/components.js';
+
+// ─── Инициализация ────────────────────────────────────────────────────────────
+const { user } = await initPage({ role: 'admin' });
+renderHeader('Admin');
+
+// ─── Регистрация страниц ──────────────────────────────────────────────────────
+onPageEnter('publishers', {
+  load:     loadPublishers,
+  render:   (s) => { if (s.publishers) renderPublishers(s.publishers); },
+  realtime: ['publishers']
+});
+onPageEnter('advertisers', {
+  load:     loadAdvertisers,
+  render:   (s) => { if (s.advertisers) renderAdvertisers(s.advertisers); },
+  realtime: ['advertisers']
+});
+onPageEnter('apps', {
+  load:     loadApps,
+  render:   (s) => { if (s.apps) renderApps(s.apps, s.publishers || []); },
+  realtime: ['apps']
+});
+onPageEnter('contracts', {
+  load:     loadContracts,
+  render:   (s) => { if (s.contracts) renderContracts(s.contracts, s.advertisers || [], s.publishers || []); },
+  realtime: ['contracts']
+});
+onPageEnter('creatives', {
+  load:     loadCreatives,
+  render:   (s) => { if (s.creatives) renderCreatives(s.creatives); },
+  realtime: ['creatives']
+});
+onPageEnter('targeting', {
+  load:     loadTargeting,
+  render:   (s) => { if (s.targeting) renderTargeting(s.targeting); },
+  realtime: ['targeting']
+});
+onPageEnter('devices', {
+  load:     loadDevices,
+  render:   (s) => { if (s.devices) renderDeviceList(s.devices, state.deviceFilter || ''); },
+});
+onPageEnter('templates', {
+  load:     loadTemplates,
+  render:   (s) => { if (s.templates) renderTemplates(s.templates); },
+});
+
+// Запустить навигацию
+initNav('publishers');
+
+// ─── Helpers (заменяют старые modal/confirm/toast/emptyState) ─────────────────
+
+// Совместимость: deleteRecord вызывается из HTML onclick
+window.deleteRecord = async function(table, id, reloadFn) {
+  openConfirm('Это действие необратимо.', async () => {
+    try {
+      await db(table, 'DELETE', null, `?id=eq.${id}`);
+      toast('Удалено ✓');
+      reloadFn();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  });
+};
+
+// Экспортируем в window всё что вызывается из HTML onclick=""
+// (формы, кнопки — пока оставляем onclick, это нормально)
+window.toast = toast;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.copyToClipboard = copyToClipboard;
+
+  // ─── Publishers ────────────────────────────────────────────────────────────
+
+  async function loadPublishers() {
+    try {
+      const data = await db('publishers', 'GET', null, '?order=created_at.desc');
+      const el = document.getElementById('publishers-list');
+      if (!data.length) { el.innerHTML = emptyState('Нет publishers', 'Добавь первого владельца приложения'); return; }
+      el.innerHTML = data.map(p => `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-label">Publisher</div>
+          <div class="card-title">${p.name}</div>
+          <div class="card-sub">${p.email}</div>
+          ${p.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text2);">${p.notes}</div>` : ''}
+          <span class="card-badge badge-${p.status}">${p.status}</span>
+          <div class="card-actions">
+            <button class="btn-icon btn-icon-edit" onclick="editPublisher('${p.id}')" title="Изменить">✏</button>
+            <button class="btn-icon btn-icon-delete" onclick="deleteRecord('publishers','${p.id}', loadPublishers)" title="Удалить">✕</button>
+          </div>
+        </div>`).join('');
+    } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+  }
+
+  async function addPublisher() {
+    const name = document.getElementById('pub-name').value.trim();
+    const email = document.getElementById('pub-email').value.trim();
+    if (!name || !email) { toast('Заполни все поля', 'error'); return; }
+    try {
+      const notes = document.getElementById('pub-notes').value.trim() || null;
+      await db('publishers', 'POST', { name, email, notes });
+      toast('Publisher добавлен ✓');
+      document.getElementById('pub-name').value = '';
+      document.getElementById('pub-email').value = '';
+      document.getElementById('pub-notes').value = '';
+      loadPublishers();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  // ─── Advertisers ───────────────────────────────────────────────────────────
+
+  async function loadAdvertisers() {
+    try {
+      const data = await db('advertisers', 'GET', null, '?order=created_at.desc');
+      const el = document.getElementById('advertisers-list');
+      if (!data.length) { el.innerHTML = emptyState('Нет advertisers', 'Добавь первого рекламодателя'); return; }
+      el.innerHTML = data.map(a => `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-label">Advertiser</div>
+          <div class="card-title">${a.name}</div>
+          <div class="card-sub">${a.email}</div>
+          ${a.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text2);">${a.notes}</div>` : ''}
+          <span class="card-badge badge-${a.status}">${a.status}</span>
+          <div class="card-actions">
+            <button class="btn-icon btn-icon-edit" onclick="editAdvertiser('${a.id}')" title="Изменить">✏</button>
+            <button class="btn-icon btn-icon-delete" onclick="deleteRecord('advertisers','${a.id}', loadAdvertisers)" title="Удалить">✕</button>
+          </div>
+        </div>`).join('');
+    } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+  }
+
+  async function addAdvertiser() {
+    const name = document.getElementById('adv-name').value.trim();
+    const email = document.getElementById('adv-email').value.trim();
+    if (!name || !email) { toast('Заполни все поля', 'error'); return; }
+    try {
+      const notes = document.getElementById('adv-notes').value.trim() || null;
+      await db('advertisers', 'POST', { name, email, notes });
+      toast('Advertiser добавлен ✓');
+      document.getElementById('adv-name').value = '';
+      document.getElementById('adv-email').value = '';
+      document.getElementById('adv-notes').value = '';
+      loadAdvertisers();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  // ─── Apps ──────────────────────────────────────────────────────────────────
+
+  async function loadApps() {
+    try {
+      const [apps, pubs] = await Promise.all([
+        db('apps', 'GET', null, '?order=created_at.desc'),
+        db('publishers', 'GET', null, '?select=id,name')
+      ]);
+
+      // fill select
+      const sel = document.getElementById('app-publisher');
+      sel.innerHTML = pubs.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+      const el = document.getElementById('apps-list');
+      if (!apps.length) { el.innerHTML = emptyState('Нет приложений', 'Добавь первое приложение'); return; }
+      el.innerHTML = apps.map(a => `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-label">App</div>
+          <div class="card-title">${a.name}</div>
+          <div class="card-sub mono">${a.app_id}</div>
+          <div style="margin-top:8px; font-size:12px; color:var(--text2);">
+            ${(a.supported_devices || []).join(', ')} · ${(a.supported_formats || []).join(', ')}
+          </div>
+          <div style="margin-top:10px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:8px 10px;">
+            <div style="font-size:11px; color:var(--text2); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">API Key</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span id="key-${a.id}" class="mono" style="font-size:12px; color:var(--accent); word-break:break-all; flex:1; filter:blur(4px); user-select:none; transition:filter 0.2s;">••••••••••••••••••••••••••••••••</span>
+              <button onclick="toggleKey('${a.id}','${a.api_key}')" style="background:none;border:1px solid var(--border);color:var(--text2);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;white-space:nowrap;flex-shrink:0;">👁 Показать</button>
+              <button onclick="copyToClipboard('${a.api_key}')" style="background:none;border:1px solid var(--border);color:var(--text2);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;white-space:nowrap;flex-shrink:0;">📋 Копировать</button>
+            </div>
+          </div>
+          ${a.notes ? `<div style="margin-top:6px;font-size:12px;color:var(--text2);">${a.notes}</div>` : ''}
+          <div class="card-actions">
+            <button class="btn-icon" onclick="regenerateKey('${a.id}')" title="Перегенерировать ключ" style="font-size:14px; padding:4px 6px;">🔄</button>
+            <button class="btn-icon btn-icon-edit" onclick="editApp('${a.id}')" title="Изменить">✏</button>
+            <button class="btn-icon btn-icon-delete" onclick="deleteRecord('apps','${a.id}', loadApps)" title="Удалить">✕</button>
+          </div>
+        </div>`).join('');
+    } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+  }
+
+  async function addApp() {
+    const publisher_id = document.getElementById('app-publisher').value;
+    const app_id = document.getElementById('app-appid').value.trim();
+    const name = document.getElementById('app-name').value.trim();
+    const supported_formats = [...document.querySelectorAll('#formats-check input:checked')].map(i => i.value);
+    const supported_devices = [...document.querySelectorAll('#devices-check input:checked')].map(i => i.value);
+    if (!app_id || !name) { toast('Заполни все поля', 'error'); return; }
+    const app_notes = document.getElementById('app-notes').value.trim() || null;
+    try {
+      await db('apps', 'POST', { publisher_id, app_id, name, supported_formats, supported_devices, notes: app_notes });
+      toast('Приложение добавлено ✓');
+      document.getElementById('app-appid').value = '';
+      document.getElementById('app-name').value = '';
+      document.getElementById('app-notes').value = '';
+      loadApps();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  // ─── Contracts ─────────────────────────────────────────────────────────────
+
+  async function loadContracts() {
+    try {
+      const [contracts, advs, pubs] = await Promise.all([
+        db('contracts', 'GET', null, '?order=created_at.desc'),
+        db('advertisers', 'GET', null, '?select=id,name'),
+        db('publishers', 'GET', null, '?select=id,name')
+      ]);
+
+      document.getElementById('contract-advertiser').innerHTML = advs.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+      document.getElementById('contract-publisher').innerHTML = pubs.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+      const el = document.getElementById('contracts-list');
+      if (!contracts.length) { el.innerHTML = emptyState('Нет контрактов', 'Создай первый контракт'); return; }
+
+      const advMap = Object.fromEntries(advs.map(a => [a.id, a.name]));
+      const pubMap = Object.fromEntries(pubs.map(p => [p.id, p.name]));
+
+      el.innerHTML = contracts.map(c => `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-label">Contract</div>
+          <div class="card-title">$${c.budget}</div>
+          <div class="card-sub">${advMap[c.advertiser_id] || '—'} → ${pubMap[c.publisher_id] || '—'}</div>
+          <div style="margin-top:8px; font-size:12px; color:var(--text2);">
+            CPM: $${c.min_cpm} – $${c.max_cpm} · ${c.starts_at?.slice(0,10)} – ${c.ends_at?.slice(0,10)}
+          </div>
+          ${c.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text2);">${c.notes}</div>` : ''}
+          <span class="card-badge badge-${c.status}">${c.status}</span>
+          ${c.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text2);">${c.notes}</div>` : ''}
+          <div class="card-actions">
+            <button class="btn-icon btn-icon-edit" onclick="editContract('${c.id}')" title="Изменить">✏</button>
+            <button class="btn-icon btn-icon-delete" onclick="deleteRecord('contracts','${c.id}', loadContracts)" title="Удалить">✕</button>
+          </div>
+        </div>`).join('');
+    } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+  }
+
+  async function addContract() {
+    const body = {
+      advertiser_id: document.getElementById('contract-advertiser').value,
+      publisher_id: document.getElementById('contract-publisher').value,
+      budget: parseFloat(document.getElementById('contract-budget').value),
+      min_cpm: parseFloat(document.getElementById('contract-mincpm').value),
+      max_cpm: parseFloat(document.getElementById('contract-maxcpm').value),
+      starts_at: document.getElementById('contract-start').value,
+      ends_at: document.getElementById('contract-end').value,
+      notes: document.getElementById('contract-notes').value.trim() || null,
+    };
+    if (!body.budget || !body.min_cpm || !body.max_cpm || !body.starts_at || !body.ends_at) {
+      toast('Заполни все поля', 'error'); return;
+    }
+    try {
+      await db('contracts', 'POST', body);
+      toast('Контракт создан ✓');
+      loadContracts();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  // ─── Creatives ─────────────────────────────────────────────────────────────
+
+  let selectedFile = null;
+  let selectedBanner = null;
+
+  function onFileSelect(input) {
+    selectedFile = input.files[0];
+    document.getElementById('file-name').textContent = selectedFile ? selectedFile.name : '';
+  }
+
+  function onBannerSelect(input) {
+    selectedBanner = input.files[0];
+    document.getElementById('banner-name').textContent = selectedBanner ? selectedBanner.name : '';
+  }
+
+
+  // ─── Справочник форматов баннеров по типу устройства ───────────────────────
+
+  const FORMAT_SIZES = {
+    phone: [
+      { value: 'banner',          label: 'Полоса',                     ratio: '32:4',  px: '1080×135',  hint: 'Узкая полоса внизу или вверху экрана' },
+      { value: 'medium_rectangle',label: 'Средний прямоугольник',      ratio: '4:1',   px: '1080×270',  hint: 'Стандартный баннер в середине экрана' },
+      { value: 'large_rectangle', label: 'Большой прямоугольник',      ratio: '2:1',   px: '1080×540',  hint: 'Крупный баннер, занимает ~30% экрана' },
+      { value: 'square',          label: 'Квадрат',                    ratio: '1:1',   px: '1080×1080', hint: 'Квадратный формат, подходит для статичных изображений' },
+      { value: 'fullscreen_v',    label: 'Полный экран (вертикальный)',  ratio: '9:16',  px: '1080×1920', hint: 'Межстраничная реклама. Обрезается автоматически под экран устройства' },
+      { value: 'fullscreen_h',    label: 'Полный экран (горизонтальный)',ratio: '16:9',  px: '1920×1080', hint: 'Альбомный полноэкранный баннер. Обрезается автоматически при вертикальной ориентации' },
+    ],
+    watch: [
+      { value: 'watch_square',    label: 'Квадратный (Galaxy/Pixel Watch)', ratio: '5:4',  px: '480×384',  hint: 'Для прямоугольных дисплеев Galaxy Watch, Pixel Watch' },
+      { value: 'watch_round',     label: 'Круглый циферблат',              ratio: '1:1',  px: '384×384',  hint: 'Для круглых дисплеев. Углы будут обрезаны по кругу' },
+      { value: 'watch_band',      label: 'Полоса (компликация)',            ratio: '4:1',  px: '384×96',   hint: 'Узкая полоса для компликаций и нижней части экрана' },
+    ],
+    tablet: [
+      { value: 'tablet_banner',   label: 'Полоса',                     ratio: '16:2',  px: '1440×180',  hint: 'Узкая полоса внизу или вверху планшета' },
+      { value: 'tablet_medium',   label: 'Средний прямоугольник',      ratio: '4:1',   px: '1440×360',  hint: 'Стандартный баннер для планшета' },
+      { value: 'tablet_square',   label: 'Квадрат',                    ratio: '1:1',   px: '1080×1080', hint: 'Квадратный баннер' },
+      { value: 'tablet_fullscreen_h', label: 'Полный экран (горизонтальный)', ratio: '4:3', px: '1440×1080', hint: 'Полноэкранный альбомный баннер для планшета' },
+      { value: 'tablet_fullscreen_v', label: 'Полный экран (вертикальный)',   ratio: '3:4', px: '1080×1440', hint: 'Полноэкранный портретный баннер для планшета' },
+    ]
+  };
+
+  function onCreativeDeviceChange() {
+    updateFormatSizeSelect();
+    onCreativeFormatChange();
+  }
+
+  function updateFormatSizeSelect() {
+    const device = document.getElementById('creative-device').value;
+    const format = document.getElementById('creative-format').value;
+    const isBanner = format.startsWith('banner') || format === 'video';
+    const sel = document.getElementById('creative-format-size');
+    const hint = document.getElementById('format-size-hint');
+    const wrap = document.getElementById('field-format-size');
+
+    // Показываем format_size только для баннеров и видео
+    wrap.style.display = isBanner ? '' : 'none';
+    if (!isBanner) return;
+
+    const sizes = FORMAT_SIZES[device] || [];
+    sel.innerHTML = sizes.map(s =>
+      `<option value="${s.value}">${s.label} · ${s.ratio} · ${s.px} px</option>`
+    ).join('');
+
+    // Обновляем подсказку при выборе
+    sel.onchange = () => {
+      const chosen = sizes.find(s => s.value === sel.value);
+      hint.textContent = chosen ? `${chosen.ratio} · ${chosen.px} px · ${chosen.hint}` : '';
+    };
+    sel.dispatchEvent(new Event('change'));
+  }
+
+  function onCreativeFormatChange() {
+    const fmt = document.getElementById('creative-format').value;
+    const isScrolling = fmt === 'scrolling_text';
+    const isAudio = fmt === 'audio';
+
+    document.getElementById('field-ad-text').style.display = isScrolling ? '' : 'none';
+    document.getElementById('field-media').style.display = isScrolling ? 'none' : '';
+    document.getElementById('field-banner').style.display = (isAudio || isScrolling) ? '' : 'none';
+
+    const labelMedia = document.getElementById('label-media');
+    if (labelMedia) labelMedia.textContent = isAudio ? 'Аудиофайл' : 'Медиафайл';
+
+    // Обновляем справочник размеров
+    updateFormatSizeSelect();
+  }
+
+  async function loadCreatives() {
+    try {
+      const [creatives, contracts, advs, apps] = await Promise.all([
+        db('creatives', 'GET', null, '?order=created_at.desc'),
+        db('contracts', 'GET', null, '?select=id,advertiser_id,publisher_id,budget'),
+        db('advertisers', 'GET', null, '?select=id,name'),
+        db('apps', 'GET', null, '?select=id,name,publisher_id')
+      ]);
+
+      const advMap = Object.fromEntries(advs.map(a => [a.id, a.name]));
+      const appMap = Object.fromEntries(apps.map(a => [a.id, a.name]));
+
+      // store globally for helpers
+      window._contracts = contracts;
+      window._apps = apps;
+      window._advs = advs;
+      window._pubs = await db('publishers', 'GET', null, '?select=id,name');
+      window._allCreatives = creatives;
+      window._allContracts = contracts;
+
+      document.getElementById('creative-contract').innerHTML = contracts.map(c =>
+        `<option value="${c.id}" data-publisher="${c.publisher_id}" data-advertiser="${c.advertiser_id}">${advMap[c.advertiser_id] || '?'} — $${c.budget}</option>`
+      ).join('');
+
+      // populate apps for first contract
+      if (contracts.length) onContractChange(document.getElementById('creative-contract'));
+
+      // init dynamic fields visibility
+      onCreativeFormatChange();
+
+      const el = document.getElementById('creatives-list');
+      if (!creatives.length) { el.innerHTML = emptyState('Нет креативов', 'Загрузи первый рекламный материал'); return; }
+      el.innerHTML = creatives.map(c => `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-label">${{banner_static:'Баннер статичный',banner_animated:'Баннер анимир.',banner_dynamic:'Баннер динам.',audio:'Аудио',scrolling_text:'Прокрутка текста',video:'Видео'}[c.format]||c.format} · ${{phone:'📱',watch:'⌚',tablet:'🗒'}[c.device_type]||c.device_type}${c.format_size ? ' · ' + c.format_size : ''}${c.creative_language ? ' · 🗣 ' + c.creative_language : ''}</div>
+          <div class="card-title">${c.name}</div>
+          <div class="card-sub mono">CPM: $${c.cpm_rate}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px;">📱 ${appMap[c.app_id] || '—'}</div>
+          ${c.media_url ? `<div style="margin-top:8px;"><a href="${c.media_url}" target="_blank" style="color:var(--accent);font-size:12px;">↗ Открыть файл</a></div>` : ''}
+          ${c.notes ? `<div style="margin-top:6px;font-size:12px;color:var(--text2);">${c.notes}</div>` : ''}
+          <span class="card-badge badge-${c.status}">${c.status}</span>
+          <div class="card-actions">
+            <button class="btn-icon btn-icon-edit" onclick="editCreative('${c.id}')" title="Изменить">✏</button>
+            <button class="btn-icon btn-icon-delete" onclick="deleteRecord('creatives','${c.id}', loadCreatives)" title="Удалить">✕</button>
+          </div>
+        </div>`).join('');
+    } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+  }
+
+  function onContractChange(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const publisherId = opt?.dataset.publisher;
+    const advertiserId = opt?.dataset.advertiser;
+    const apps = (window._apps || []).filter(a => a.publisher_id === publisherId);
+    document.getElementById('creative-app').innerHTML = apps.length
+      ? apps.map(a => `<option value="${a.id}">${a.name}</option>`).join('')
+      : '<option value="">— нет приложений —</option>';
+
+    const advMap = Object.fromEntries((window._advs||[]).map(a => [a.id, a.name]));
+    const pubMap = Object.fromEntries((window._pubs||[]).map(p => [p.id, p.name]));
+    const info = document.getElementById('contract-info');
+    if (info) {
+      const adv = advMap[advertiserId] || '—';
+      const pub = pubMap[publisherId] || '—';
+      info.textContent = `Advertiser: ${adv} · Publisher: ${pub}`;
+    }
+  }
+
+  function onTargetingCreativeChange(sel) {
+    const creativeId = sel.value;
+    const creative = (window._allCreatives||[]).find(c => c.id === creativeId);
+    const info = document.getElementById('targeting-creative-info');
+    if (!info || !creative) return;
+
+    const contract = (window._allContracts||[]).find(c => c.id === creative.contract_id);
+    const advMap = Object.fromEntries((window._advs||[]).map(a => [a.id, a.name]));
+    const pubMap = Object.fromEntries((window._pubs||[]).map(p => [p.id, p.name]));
+    const appMap = Object.fromEntries((window._apps||[]).map(a => [a.id, a.name]));
+
+    const adv = contract ? (advMap[contract.advertiser_id] || '—') : '—';
+    const pub = contract ? (pubMap[contract.publisher_id] || '—') : '—';
+    const app = appMap[creative.app_id] || '—';
+    info.textContent = `Advertiser: ${adv} · Publisher: ${pub} · App: ${app}`;
+  }
+
+  async function addCreative() {
+    const contract_id = document.getElementById('creative-contract').value;
+    const app_id = document.getElementById('creative-app').value;
+    const name = document.getElementById('creative-name').value.trim();
+    const format = document.getElementById('creative-format').value;
+    const device_type = document.getElementById('creative-device').value;
+    const format_size = document.getElementById('creative-format-size').value || null;
+    const creative_language = document.getElementById('creative-language').value || null;
+    const cpm_rate = parseFloat(document.getElementById('creative-cpm').value);
+
+    const fmt = document.getElementById('creative-format').value;
+    const isScrolling = fmt === 'scrolling_text';
+    const isAudio = fmt === 'audio';
+    const ad_text = document.getElementById('creative-ad-text').value.trim() || null;
+
+    if (!name || !cpm_rate) { toast('Заполни все поля', 'error'); return; }
+    if (!isScrolling && !selectedFile) { toast('Выбери медиафайл', 'error'); return; }
+    if (isScrolling && !ad_text) { toast('Введи рекламный текст', 'error'); return; }
+
+    const btn = document.getElementById('btn-add-creative');
+    btn.disabled = true;
+    btn.textContent = 'Загрузка файла...';
+
+    try {
+      // use advertiser_id for storage path (safe, no cyrillic)
+      const contracts = await db("contracts", "GET", null, `?id=eq.${contract_id}&select=advertiser_id`);
+      const advertiser_id = contracts[0].advertiser_id;
+
+      const media_url = await uploadFile(selectedFile, advertiser_id);
+
+      btn.textContent = 'Сохранение...';
+      const creative_notes = document.getElementById('creative-notes').value.trim() || null;
+      await db('creatives', 'POST', { contract_id, app_id, name, format, device_type, format_size, creative_language, cpm_rate, media_url, notes: creative_notes });
+
+      toast('Креатив загружен ✓');
+      document.getElementById('creative-name').value = '';
+      document.getElementById('creative-cpm').value = '';
+      document.getElementById('file-name').textContent = '';
+      document.getElementById('banner-name').textContent = '';
+      document.getElementById('creative-ad-text').value = '';
+      selectedFile = null;
+      selectedBanner = null;
+      loadCreatives();
+    } catch(e) {
+      toast('Ошибка: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Загрузить и сохранить →';
+    }
+  }
+
+  // ─── Targeting ─────────────────────────────────────────────────────────────
+
+  async function loadTargeting() {
+    try {
+      const [targeting, creatives] = await Promise.all([
+        db('targeting', 'GET', null, '?order=id.desc'),
+        db('creatives', 'GET', null, '?select=id,name,contract_id,app_id')
+      ]);
+
+      window._allCreatives = creatives;
+      window._allContracts = await db('contracts', 'GET', null, '?select=id,advertiser_id,publisher_id');
+      window._advs = await db('advertisers', 'GET', null, '?select=id,name');
+      window._apps = await db('apps', 'GET', null, '?select=id,name,publisher_id');
+      window._pubs = await db('publishers', 'GET', null, '?select=id,name');
+
+      // load device models for selects
+      try {
+        const deviceModels = await db('device_models', 'GET', null, '?order=brand.asc,model.asc');
+        window._deviceModels = deviceModels;
+        populateDeviceSelects('targeting-phone-models', 'targeting-watch-models', 'targeting-headphones-bt-models', deviceModels);
+      } catch(e) { /* table may not exist yet */ }
+
+      document.getElementById('targeting-creative').innerHTML = creatives.map(c =>
+        `<option value="${c.id}">${c.name}</option>`
+      ).join('');
+
+      // show info for first creative
+      if (creatives.length) onTargetingCreativeChange(document.getElementById('targeting-creative'));
+
+      // init language pickers
+      initLangPicker('lp-primary', [], true);
+      initLangPicker('lp-secondary', [], false);
+      initLangPicker('lp-learning', [], false);
+
+      const el = document.getElementById('targeting-list');
+      const creativeMap = Object.fromEntries(creatives.map(c => [c.id, c.name]));
+
+      if (!targeting.length) { el.innerHTML = emptyState('Нет настроек таргетинга', 'Настрой таргетинг для креативов'); return; }
+      el.innerHTML = targeting.map(t => `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-label">Targeting</div>
+          <div class="card-title">${creativeMap[t.creative_id] || '—'}</div>
+          <div style="margin-top:8px; font-size:12px; color:var(--text2);">
+            ${t.language_primary ? '🌐 ' + t.language_primary : ''}
+            ${t.language_secondary?.length ? ' + ' + t.language_secondary.join(', ') : ''}
+            ${t.learning_languages?.length ? ' · 📚 ' + t.learning_languages.join(', ') : ''}
+            ${t.cities?.length ? ' · 📍 ' + t.cities.join(', ') : ''}
+            ${t.weather_conditions?.length ? ' · ' + t.weather_conditions.join(', ') : ''}
+            ${t.time_from != null ? ' · ⏰ ' + String(Math.floor(t.time_from/60)).padStart(2,'0') + ':' + String(t.time_from%60).padStart(2,'0') + '–' + String(Math.floor(t.time_to/60)).padStart(2,'0') + ':' + String(t.time_to%60).padStart(2,'0') : ''}
+            ${t.days_of_week?.length ? ' · ' + t.days_of_week.join(',') : ''}
+          </div>
+          <div style="margin-top:4px; font-size:12px; color:var(--text2);">
+            ${t.has_headphones ? '🎧 ' : ''}${t.has_wired_headphones ? '🎧wired ' : ''}${t.has_watch ? '⌚ ' : ''}${t.is_migrant ? '🌍 ' : ''}${t.large_font ? '🔤 ' : ''}${t.device_tier ? '📱 ' + t.device_tier : ''}${t.ram_min||t.ram_max ? ' · RAM ' + (t.ram_min||'') + '–' + (t.ram_max||'') + 'GB' : ''}${t.storage_free_min!=null||t.storage_free_max!=null ? ' · 💾free ' + (t.storage_free_min??'') + '–' + (t.storage_free_max??'') + 'GB' : ''}${t.storage_total_min!=null||t.storage_total_max!=null ? ' · 💾total ' + (t.storage_total_min??'') + '–' + (t.storage_total_max??'') + 'GB' : ''}${t.battery_min!=null||t.battery_max!=null ? ' · 🔋' + (t.battery_min??'') + '–' + (t.battery_max??'') + '%' : ''}
+          </div>
+          ${t.notes ? `<div style="margin-top:6px;font-size:12px;color:var(--text2);">${t.notes}</div>` : ''}
+          <div class="card-actions">
+            <button class="btn-icon btn-icon-edit" onclick="saveTargetingAsTemplate('${t.id}')" title="Сохранить как шаблон" style="font-size:11px;">📋</button>
+            <button class="btn-icon btn-icon-edit" onclick="duplicateTargeting('${t.id}')" title="Дублировать" style="font-size:11px;">⧉</button>
+            <button class="btn-icon btn-icon-edit" onclick="editTargeting('${t.id}')" title="Изменить">✏</button>
+            <button class="btn-icon btn-icon-delete" onclick="deleteRecord('targeting','${t.id}', loadTargeting)" title="Удалить">✕</button>
+          </div>
+        </div>`).join('');
+    } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+  }
+
+  async function addTargeting() {
+    const creative_id = document.getElementById('targeting-creative').value;
+    const langPrimary = getLangPickerValue('lp-primary', true);
+    const langSecondary = getLangPickerValue('lp-secondary', false);
+    const learningLangs = getLangPickerValue('lp-learning', false);
+    const weather_conditions = [...document.querySelectorAll('.weather-cb:checked')].map(i => i.value);
+    const device_types = [...document.querySelectorAll('.device-cb:checked')].map(i => i.value);
+    const device_tier = document.getElementById('targeting-device-tier').value || null;
+    const temp_min = document.getElementById('targeting-tempmin').value;
+    const temp_max = document.getElementById('targeting-tempmax').value;
+    const has_headphones = document.getElementById('targeting-headphones').checked || null;
+    const has_wired_headphones = document.getElementById('targeting-headphones-wired').checked || null;
+    const has_watch = document.getElementById('targeting-watch').checked || null;
+    const is_migrant = document.getElementById('targeting-migrant').checked || null;
+    const large_font = document.getElementById('targeting-large-font').checked || null;
+    const phone_foldable = document.getElementById('targeting-foldable').checked || null;
+    const ram_min = document.getElementById('targeting-ram-min').value ? parseInt(document.getElementById('targeting-ram-min').value) : null;
+    const ram_max = document.getElementById('targeting-ram-max').value ? parseInt(document.getElementById('targeting-ram-max').value) : null;
+    const storage_free_min = document.getElementById('targeting-storage-min').value ? parseInt(document.getElementById('targeting-storage-min').value) : null;
+    const storage_free_max = document.getElementById('targeting-storage-max').value ? parseInt(document.getElementById('targeting-storage-max').value) : null;
+    const storage_total_min = document.getElementById('targeting-storage-total-min').value ? parseInt(document.getElementById('targeting-storage-total-min').value) : null;
+    const storage_total_max = document.getElementById('targeting-storage-total-max').value ? parseInt(document.getElementById('targeting-storage-total-max').value) : null;
+    const battery_min = document.getElementById('targeting-battery-min').value ? parseInt(document.getElementById('targeting-battery-min').value) : null;
+    const battery_max = document.getElementById('targeting-battery-max').value ? parseInt(document.getElementById('targeting-battery-max').value) : null;
+    const phone_screen_sizes = [...document.querySelectorAll('.screen-cb:checked')].map(i => i.value);
+    const phone_models = [...document.getElementById('targeting-phone-models').selectedOptions].map(o => o.value);
+    const watch_models = [...document.getElementById('targeting-watch-models').selectedOptions].map(o => o.value);
+    const headphones_bt_models = [...document.getElementById('targeting-headphones-bt-models').selectedOptions].map(o => o.value);
+    const timeFromVal = document.getElementById('targeting-time-from').value;
+    const timeToVal = document.getElementById('targeting-time-to').value;
+    const toMinutes = t => { if (!t) return null; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const time_from = toMinutes(timeFromVal);
+    const time_to = toMinutes(timeToVal);
+    const days_of_week = [...document.querySelectorAll('.day-cb:checked')].map(i => i.value);
+
+    const body = {
+      creative_id,
+      language_primary: langPrimary || null,
+      language_secondary: langSecondary,
+      learning_languages: learningLangs,
+      match_interface_language: document.getElementById('targeting-match-lang').checked,
+      cities: selectedCities,
+      weather_conditions,
+      device_types,
+      device_tier,
+      has_headphones: has_headphones || null,
+      has_wired_headphones: has_wired_headphones || null,
+      has_watch: has_watch || null,
+      is_migrant: is_migrant || null,
+      large_font: large_font || null,
+      phone_foldable: phone_foldable || null,
+      ram_min,
+      ram_max,
+      storage_free_min,
+      storage_free_max,
+      storage_total_min,
+      storage_total_max,
+      battery_min,
+      battery_max,
+      phone_screen_sizes,
+      phone_models,
+      watch_models,
+      headphones_bt_models,
+      temp_min: temp_min ? parseInt(temp_min) : null,
+      temp_max: temp_max ? parseInt(temp_max) : null,
+      time_from,
+      time_to,
+      days_of_week,
+    };
+
+    try {
+      body.notes = document.getElementById('targeting-notes').value.trim() || null;
+      await db('targeting', 'POST', body);
+      toast('Таргетинг сохранён ✓');
+      resetCityAutocomplete();
+      loadTargeting();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  }
+
+
+  // ─── Devices ────────────────────────────────────────────────────────────────
+
+  let currentDeviceFilter = '';
+
+  function populateDeviceSelects(phoneSelId, watchSelId, btSelId, models) {
+    const phones = models.filter(m => m.device_type === 'phone');
+    const watches = models.filter(m => m.device_type === 'watch');
+    const bts = models.filter(m => m.device_type === 'headphones_bt');
+    const toOpts = arr => arr.map(m => `<option value="${m.id}">${m.brand} ${m.model} (${m.release_year})</option>`).join('');
+    const phoneSel = document.getElementById(phoneSelId);
+    const watchSel = document.getElementById(watchSelId);
+    const btSel = document.getElementById(btSelId);
+    if (phoneSel) phoneSel.innerHTML = toOpts(phones);
+    if (watchSel) watchSel.innerHTML = toOpts(watches);
+    if (btSel) btSel.innerHTML = toOpts(bts);
+  }
+
+  async function loadDevices() {
+    try {
+      const models = await db('device_models', 'GET', null, '?order=device_type.asc,brand.asc,model.asc');
+      window._deviceModels = models;
+      renderDeviceList(models, currentDeviceFilter);
+    } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+  }
+
+  function filterDevices(type) {
+    currentDeviceFilter = type;
+    renderDeviceList(window._deviceModels || [], type);
+  }
+
+  function renderDeviceList(models, filter) {
+    const filtered = filter ? models.filter(m => m.device_type === filter) : models;
+    const el = document.getElementById('devices-list');
+    if (!filtered.length) { el.innerHTML = emptyState('Нет устройств', 'Добавь первую модель'); return; }
+
+    const typeIcon = {phone:'📱', watch:'⌚', headphones_bt:'🎧'};
+    const tierLabel = {flagship:'Флагман', mid:'Средний', budget:'Бюджет'};
+
+    el.innerHTML = filtered.map(m => `
+      <div class="card" style="margin-bottom:10px;">
+        <div class="card-label">${typeIcon[m.device_type]||''} ${m.device_type} · ${tierLabel[m.tier]||m.tier}</div>
+        <div class="card-title">${m.brand} ${m.model}</div>
+        <div class="card-sub mono">${m.release_year}${m.screen_inches ? ' · ' + m.screen_inches + '"' : ''}${m.screen_size ? ' · ' + m.screen_size : ''}${m.is_foldable ? ' · складной' : ''}</div>
+        ${m.notes ? `<div style="margin-top:4px;font-size:12px;color:var(--text2);">${m.notes}</div>` : ''}
+        <div class="card-actions">
+          <button class="btn-icon btn-icon-edit" onclick="editDevice('${m.id}')" title="Изменить">✏</button>
+          <button class="btn-icon btn-icon-delete" onclick="deleteRecord('device_models','${m.id}', loadDevices)" title="Удалить">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  async function addDevice() {
+    const device_type = document.getElementById('dev-type').value;
+    const brand = document.getElementById('dev-brand').value.trim();
+    const model = document.getElementById('dev-model').value.trim();
+    const release_year = parseInt(document.getElementById('dev-year').value);
+    const tier = document.getElementById('dev-tier').value;
+    if (!brand || !model || !release_year) { toast('Заполни бренд, модель и год', 'error'); return; }
+
+    const body = { device_type, brand, model, release_year, tier,
+      notes: document.getElementById('dev-notes').value.trim() || null };
+
+    if (device_type === 'phone') {
+      body.screen_inches = parseFloat(document.getElementById('dev-screen-inches').value) || null;
+      body.screen_size = document.getElementById('dev-screen-size').value;
+      body.is_foldable = document.getElementById('dev-foldable').checked || null;
+    }
+
+    try {
+      await db('device_models', 'POST', body);
+      toast('Устройство добавлено ✓');
+      document.getElementById('dev-brand').value = '';
+      document.getElementById('dev-model').value = '';
+      document.getElementById('dev-year').value = '';
+      document.getElementById('dev-notes').value = '';
+      loadDevices();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function editDevice(id) {
+    const rows = await db('device_models', 'GET', null, `?id=eq.${id}`);
+    const m = rows[0];
+    const typeOptions = ['phone','watch','headphones_bt'].map(t =>
+      `<option value="${t}" ${t===m.device_type?'selected':''}>${{phone:'📱 Смартфон',watch:'⌚ Часы',headphones_bt:'🎧 Наушники'}[t]}</option>`).join('');
+    const tierOptions = ['flagship','mid','budget'].map(t =>
+      `<option value="${t}" ${t===m.tier?'selected':''}>${{flagship:'Флагман',mid:'Средний',budget:'Бюджетный'}[t]}</option>`).join('');
+    const sizeOptions = ['small','normal','large'].map(s =>
+      `<option value="${s}" ${s===m.screen_size?'selected':''}>${{small:'Маленький',normal:'Нормальный',large:'Большой'}[s]}</option>`).join('');
+
+    openModal('Редактировать устройство', `
+      <div class="form-group"><label>Тип</label><select id="m-type">${typeOptions}</select></div>
+      <div class="form-row">
+        <div class="form-group"><label>Бренд</label><input id="m-brand" type="text" value="${m.brand}"></div>
+        <div class="form-group"><label>Модель</label><input id="m-model" type="text" value="${m.model}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Год</label><input id="m-year" type="number" value="${m.release_year}"></div>
+        <div class="form-group"><label>Сегмент</label><select id="m-tier">${tierOptions}</select></div>
+      </div>
+      ${m.device_type === 'phone' ? `
+      <div class="form-row">
+        <div class="form-group"><label>Экран (дюймы)</label><input id="m-inches" type="number" step="0.1" value="${m.screen_inches||''}"></div>
+        <div class="form-group"><label>Размер</label><select id="m-size">${sizeOptions}</select></div>
+      </div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="m-foldable" ${m.is_foldable?'checked':''}> Складной
+      </label></div>` : ''}
+      <div class="form-group"><label>Комментарий</label><textarea id="m-notes">${m.notes||''}</textarea></div>
+    `, async () => {
+      const patch = {
+        device_type: document.getElementById('m-type').value,
+        brand: document.getElementById('m-brand').value.trim(),
+        model: document.getElementById('m-model').value.trim(),
+        release_year: parseInt(document.getElementById('m-year').value),
+        tier: document.getElementById('m-tier').value,
+        notes: document.getElementById('m-notes').value.trim() || null,
+      };
+      if (m.device_type === 'phone') {
+        patch.screen_inches = parseFloat(document.getElementById('m-inches')?.value) || null;
+        patch.screen_size = document.getElementById('m-size')?.value;
+        patch.is_foldable = document.getElementById('m-foldable')?.checked || null;
+      }
+      try {
+        await db('device_models', 'PATCH', patch, `?id=eq.${id}`);
+        toast('Устройство обновлено ✓'); closeModal(); loadDevices();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+    });
+  }
+
+  // ─── Templates ─────────────────────────────────────────────────────────────
+
+  let tmplSelectedCities = [];
+
+  async function loadTemplates() {
+    try {
+      const [templates, advs] = await Promise.all([
+        db('templates', 'GET', null, '?order=created_at.desc'),
+        db('advertisers', 'GET', null, '?select=id,name')
+      ]);
+
+      const advMap = Object.fromEntries(advs.map(a => [a.id, a.name]));
+      document.getElementById('tmpl-advertiser').innerHTML =
+        '<option value="">— Все рекламодатели —</option>' +
+        advs.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+
+      // init lang pickers
+      initLangPicker('tmpl-lp-primary', [], true);
+      initLangPicker('tmpl-lp-secondary', [], false);
+      initLangPicker('tmpl-lp-learning', [], false);
+
+      const el = document.getElementById('templates-list');
+      if (!templates.length) { el.innerHTML = emptyState('Нет шаблонов', 'Создай первый шаблон таргетинга'); return; }
+
+      el.innerHTML = templates.map(t => {
+        const tg = t.targeting || {};
+        const parts = [];
+        if (tg.language_primary) parts.push('🌐 ' + tg.language_primary);
+        if (tg.language_secondary?.length) parts.push('+' + tg.language_secondary.join(','));
+        if (tg.cities?.length) parts.push('📍 ' + tg.cities.join(', '));
+        if (tg.weather_conditions?.length) parts.push(tg.weather_conditions.join(', '));
+        if (tg.has_headphones) parts.push('🎧');
+        if (tg.has_watch) parts.push('⌚');
+        if (tg.is_migrant) parts.push('🌍');
+        if (tg.device_tier) parts.push('📱 ' + tg.device_tier);
+        return `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-label">${t.advertiser_id ? (advMap[t.advertiser_id] || '—') : '🌐 Для всех рекламодателей'}</div>
+          <div class="card-title">${t.name}</div>
+          <div style="margin-top:6px; font-size:12px; color:var(--text2);">${parts.join(' · ')}</div>
+          ${t.targeting?.notes ? `<div style="margin-top:6px;font-size:12px;color:var(--text2);">${t.targeting.notes}</div>` : ''}
+          <div class="card-actions">
+            <button class="btn-icon btn-icon-edit" onclick="editTemplate('${t.id}')" title="Изменить">✏</button>
+            <button class="btn-icon btn-icon-delete" onclick="deleteRecord('templates','${t.id}', loadTemplates)" title="Удалить">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+  }
+
+  async function addTemplate() {
+    const advertiser_id = document.getElementById('tmpl-advertiser').value;
+    const name = document.getElementById('tmpl-name').value.trim();
+    if (!name) { toast('Введи название', 'error'); return; }
+
+    const toMins = v => { if (!v) return null; const [h,m] = v.split(':').map(Number); return h*60+m; };
+
+    const targeting = {
+      language_primary: getLangPickerValue('tmpl-lp-primary', true) || null,
+      language_secondary: getLangPickerValue('tmpl-lp-secondary', false),
+      learning_languages: getLangPickerValue('tmpl-lp-learning', false),
+      cities: tmplSelectedCities,
+      device_types: [...document.querySelectorAll('.tmpl-device-cb:checked')].map(i => i.value),
+      device_tier: document.getElementById('tmpl-device-tier').value || null,
+      has_headphones: document.getElementById('tmpl-headphones').checked || null,
+      has_watch: document.getElementById('tmpl-watch').checked || null,
+      is_migrant: document.getElementById('tmpl-migrant').checked || null,
+      weather_conditions: [...document.querySelectorAll('.tmpl-weather-cb:checked')].map(i => i.value),
+      temp_min: document.getElementById('tmpl-tempmin').value ? parseInt(document.getElementById('tmpl-tempmin').value) : null,
+      temp_max: document.getElementById('tmpl-tempmax').value ? parseInt(document.getElementById('tmpl-tempmax').value) : null,
+      time_from: toMins(document.getElementById('tmpl-time-from').value),
+      time_to: toMins(document.getElementById('tmpl-time-to').value),
+      days_of_week: [...document.querySelectorAll('.tmpl-day-cb:checked')].map(i => i.value),
+      notes: document.getElementById('tmpl-notes').value.trim() || null,
+    };
+
+    try {
+      await db('templates', 'POST', { advertiser_id, name, targeting });
+      toast('Шаблон сохранён ✓');
+      document.getElementById('tmpl-name').value = '';
+      document.getElementById('tmpl-notes').value = '';
+      tmplSelectedCities = [];
+      renderTmplCityTags();
+      initLangPicker('tmpl-lp-primary', [], true);
+      initLangPicker('tmpl-lp-secondary', [], false);
+      initLangPicker('tmpl-lp-learning', [], false);
+      loadTemplates();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function editTemplate(id) {
+    const [rows, advs] = await Promise.all([
+      db('templates', 'GET', null, `?id=eq.${id}`),
+      db('advertisers', 'GET', null, '?select=id,name')
+    ]);
+    const t = rows[0];
+    const tg = t.targeting || {};
+    const advOptions = `<option value="" ${!t.advertiser_id?'selected':''}>— Все рекламодатели —</option>` + advs.map(a => `<option value="${a.id}" ${a.id===t.advertiser_id?'selected':''}>${a.name}</option>`).join('');
+    const toTime = mins => mins != null ? String(Math.floor(mins/60)).padStart(2,'0') + ':' + String(mins%60).padStart(2,'0') : '';
+    const weatherOpts = ['sunny','rain','snow','fog','wind','cloudy'];
+    const dayOpts = ['mon','tue','wed','thu','fri','sat','sun'];
+    const dayLabels = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+    openModal('Редактировать шаблон', `
+      <div class="form-group"><label>Advertiser</label><select id="m-adv">${advOptions}</select></div>
+      <div class="form-group"><label>Название</label><input id="m-name" type="text" value="${t.name}"></div>
+      <div class="form-group"><label>Основной язык</label><div class="lang-picker" id="m-tmpl-lp-primary"></div></div>
+      <div class="form-group"><label>Дополнительные языки</label><div class="lang-picker" id="m-tmpl-lp-secondary"></div></div>
+      <div class="form-group"><label>Изучает языки (OR)</label><div class="lang-picker" id="m-tmpl-lp-learning"></div></div>
+      <div class="form-group"><label>Города (через запятую)</label><input id="m-cities" type="text" value="${(tg.cities||[]).join(', ')}"></div>
+      <div class="form-group"><label>Класс устройства</label>
+        <select id="m-tier">
+          <option value="" ${!tg.device_tier?'selected':''}>Любой</option>
+          ${['flagship','mid','budget'].map(v => `<option value="${v}" ${tg.device_tier===v?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>Подключено</label>
+        <div style="display:flex;gap:16px;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;"><input type="checkbox" id="m-headphones" ${tg.has_headphones?'checked':''}> 🎧</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;"><input type="checkbox" id="m-watch" ${tg.has_watch?'checked':''}> ⌚</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;"><input type="checkbox" id="m-migrant" ${tg.is_migrant?'checked':''}> 🌍</label>
+        </div>
+      </div>
+      <div class="form-group"><label>Погода</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+          ${weatherOpts.map(w => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;">
+            <input type="checkbox" value="${w}" class="m-weather" ${(tg.weather_conditions||[]).includes(w)?'checked':''}> ${w}
+          </label>`).join('')}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Темп. мин</label><input id="m-tempmin" type="number" value="${tg.temp_min??''}"></div>
+        <div class="form-group"><label>Темп. макс</label><input id="m-tempmax" type="number" value="${tg.temp_max??''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Время с</label><input id="m-time-from" type="time" step="1800" value="${toTime(tg.time_from)}"></div>
+        <div class="form-group"><label>Время до</label><input id="m-time-to" type="time" step="1800" value="${toTime(tg.time_to)}"></div>
+      </div>
+      <div class="form-group"><label>Дни недели</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+          ${dayOpts.map((d,i) => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;">
+            <input type="checkbox" value="${d}" class="m-day" ${(tg.days_of_week||[]).includes(d)?'checked':''}> ${dayLabels[i]}
+          </label>`).join('')}
+        </div>
+      </div>
+      <div class="form-group"><label>Комментарий</label><textarea id="m-notes">${tg.notes||''}</textarea></div>
+    `, async () => {
+      const toMins = v => { if (!v) return null; const [h,m] = v.split(':').map(Number); return h*60+m; };
+      try {
+        await db('templates', 'PATCH', {
+          advertiser_id: document.getElementById('m-adv').value,
+          name: document.getElementById('m-name').value.trim(),
+          targeting: {
+            ...tg,
+            language_primary: getLangPickerValue('m-tmpl-lp-primary', true) || null,
+            language_secondary: getLangPickerValue('m-tmpl-lp-secondary', false),
+            learning_languages: getLangPickerValue('m-tmpl-lp-learning', false),
+            cities: document.getElementById('m-cities').value.split(',').map(s=>s.trim()).filter(Boolean),
+            device_tier: document.getElementById('m-tier').value || null,
+            has_headphones: document.getElementById('m-headphones').checked || null,
+            has_watch: document.getElementById('m-watch').checked || null,
+            is_migrant: document.getElementById('m-migrant').checked || null,
+            weather_conditions: [...document.querySelectorAll('.m-weather:checked')].map(i=>i.value),
+            temp_min: document.getElementById('m-tempmin').value ? parseInt(document.getElementById('m-tempmin').value) : null,
+            temp_max: document.getElementById('m-tempmax').value ? parseInt(document.getElementById('m-tempmax').value) : null,
+            time_from: toMins(document.getElementById('m-time-from').value),
+            time_to: toMins(document.getElementById('m-time-to').value),
+            days_of_week: [...document.querySelectorAll('.m-day:checked')].map(i=>i.value),
+            notes: document.getElementById('m-notes').value.trim() || null,
+          }
+        }, `?id=eq.${id}`);
+        toast('Шаблон обновлён ✓'); closeModal(); loadTemplates();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+    });
+
+    setTimeout(() => {
+      initLangPicker('m-tmpl-lp-primary', tg.language_primary ? [tg.language_primary] : [], true);
+      initLangPicker('m-tmpl-lp-secondary', tg.language_secondary || [], false);
+      initLangPicker('m-tmpl-lp-learning', tg.learning_languages || [], false);
+    }, 0);
+  }
+
+  // city tags for templates
+  function renderTmplCityTags() {
+    const wrap = document.getElementById('tmpl-city-tags');
+    if (!wrap) return;
+    wrap.innerHTML = tmplSelectedCities.map(c =>
+      `<div class="city-tag">${c}<span class="city-tag-remove" onclick="removeTmplCity('${c.replace(/'/g,"\'")}')">×</span></div>`
+    ).join('');
+  }
+
+  function removeTmplCity(city) {
+    tmplSelectedCities = tmplSelectedCities.filter(c => c !== city);
+    renderTmplCityTags();
+  }
+
+
+  async function deleteRecord(table, id, reload) {
+    openConfirm('Это действие необратимо.', async () => {
+      try {
+        await db(table, 'DELETE', null, `?id=eq.${id}`);
+        toast('Удалено ✓');
+        reload();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+    });
+  }
+
+
+  // ─── Edit Publisher ─────────────────────────────────────────────────────────
+
+  async function editPublisher(id) {
+    const rows = await db('publishers', 'GET', null, `?id=eq.${id}`);
+    const p = rows[0];
+    const statusOptions = ['active','suspended'].map(s =>
+      `<option value="${s}" ${s===p.status?'selected':''}>${s}</option>`).join('');
+    openModal('Редактировать publisher', `
+      <div class="form-group"><label>Название</label><input id="m-name" type="text" value="${p.name}"></div>
+      <div class="form-group"><label>Email</label><input id="m-email" type="email" value="${p.email}"></div>
+      <div class="form-group"><label>Статус</label><select id="m-status">${statusOptions}</select></div>
+      <div class="form-group"><label>Комментарий</label><textarea id="m-notes">${p.notes||''}</textarea></div>
+    `, async () => {
+      try {
+        await db('publishers', 'PATCH', {
+          name: document.getElementById('m-name').value,
+          email: document.getElementById('m-email').value,
+          status: document.getElementById('m-status').value,
+          notes: document.getElementById('m-notes').value.trim() || null,
+        }, `?id=eq.${id}`);
+        toast('Publisher обновлён ✓'); closeModal(); loadPublishers();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+    });
+  }
+
+  // ─── Edit Advertiser ────────────────────────────────────────────────────────
+
+  async function editAdvertiser(id) {
+    const rows = await db('advertisers', 'GET', null, `?id=eq.${id}`);
+    const a = rows[0];
+    const statusOptions = ['active','suspended'].map(s =>
+      `<option value="${s}" ${s===a.status?'selected':''}>${s}</option>`).join('');
+    openModal('Редактировать advertiser', `
+      <div class="form-group"><label>Название</label><input id="m-name" type="text" value="${a.name}"></div>
+      <div class="form-group"><label>Email</label><input id="m-email" type="email" value="${a.email}"></div>
+      <div class="form-group"><label>Статус</label><select id="m-status">${statusOptions}</select></div>
+      <div class="form-group"><label>Комментарий</label><textarea id="m-notes">${a.notes||''}</textarea></div>
+    `, async () => {
+      try {
+        await db('advertisers', 'PATCH', {
+          name: document.getElementById('m-name').value,
+          email: document.getElementById('m-email').value,
+          status: document.getElementById('m-status').value,
+          notes: document.getElementById('m-notes').value.trim() || null,
+        }, `?id=eq.${id}`);
+        toast('Advertiser обновлён ✓'); closeModal(); loadAdvertisers();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+    });
+  }
+
+  // ─── Edit App ───────────────────────────────────────────────────────────────
+
+  async function editApp(id) {
+    const [rows, pubs] = await Promise.all([
+      db('apps', 'GET', null, `?id=eq.${id}`),
+      db('publishers', 'GET', null, '?select=id,name')
+    ]);
+    const a = rows[0];
+    const pubOptions = pubs.map(p => `<option value="${p.id}" ${p.id===a.publisher_id?'selected':''}>${p.name}</option>`).join('');
+    const formats = ['banner_static','banner_animated','banner_dynamic','audio','video'];
+    const devices = ['phone','watch','tablet'];
+    openModal('Редактировать приложение', `
+      <div class="form-group"><label>Publisher</label><select id="m-pub">${pubOptions}</select></div>
+      <div class="form-group"><label>App ID</label><input id="m-appid" type="text" value="${a.app_id}"></div>
+      <div class="form-group">
+        <label>API Key</label>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+          <input id="m-apikey" type="text" value="${a.api_key}" readonly style="flex:1;font-family:monospace;font-size:12px;background:var(--surface2);color:var(--accent);cursor:default;">
+          <button type="button" onclick="copyToClipboard(document.getElementById('m-apikey').value)" style="background:none;border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:4px;cursor:pointer;font-size:12px;white-space:nowrap;">📋</button>
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-top:4px;">Ключ только для чтения. Для замены используй 🔄 на карточке.</div>
+      </div>
+      <div class="form-group"><label>Название</label><input id="m-name" type="text" value="${a.name}"></div>
+      <div class="form-group"><label>Форматы</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+          ${formats.map(f => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;">
+            <input type="checkbox" value="${f}" class="m-format" ${(a.supported_formats||[]).includes(f)?'checked':''}> ${f}
+          </label>`).join('')}
+        </div>
+      </div>
+      <div class="form-group"><label>Устройства</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+          ${devices.map(d => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;">
+            <input type="checkbox" value="${d}" class="m-device" ${(a.supported_devices||[]).includes(d)?'checked':''}> ${d}
+          </label>`).join('')}
+        </div>
+      </div>
+      <div class="form-group"><label>Комментарий</label><textarea id="m-notes">${a.notes||''}</textarea></div>
+    `, async () => {
+      try {
+        await db('apps', 'PATCH', {
+          publisher_id: document.getElementById('m-pub').value,
+          app_id: document.getElementById('m-appid').value.trim(),
+          name: document.getElementById('m-name').value.trim(),
+          supported_formats: [...document.querySelectorAll('.m-format:checked')].map(i=>i.value),
+          supported_devices: [...document.querySelectorAll('.m-device:checked')].map(i=>i.value),
+          notes: document.getElementById('m-notes').value.trim() || null,
+        }, `?id=eq.${id}`);
+        toast('Приложение обновлено ✓'); closeModal(); loadApps();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+    });
+  }
+
+  // ─── Edit Contract ──────────────────────────────────────────────────────────
+
+  async function editContract(id) {
+    const [rows, advs, pubs] = await Promise.all([
+      db('contracts', 'GET', null, `?id=eq.${id}&select=*`),
+      db('advertisers', 'GET', null, '?select=id,name'),
+      db('publishers', 'GET', null, '?select=id,name')
+    ]);
+    const c = rows[0];
+    const advOptions = advs.map(a => `<option value="${a.id}" ${a.id===c.advertiser_id?'selected':''}>${a.name}</option>`).join('');
+    const pubOptions = pubs.map(p => `<option value="${p.id}" ${p.id===c.publisher_id?'selected':''}>${p.name}</option>`).join('');
+    const statusOptions = ['draft','active','paused','completed'].map(s =>
+      `<option value="${s}" ${s===c.status?'selected':''}>${s}</option>`).join('');
+
+    openModal('Редактировать контракт', `
+      <div class="form-group"><label>Advertiser</label><select id="m-adv">${advOptions}</select></div>
+      <div class="form-group"><label>Publisher</label><select id="m-pub">${pubOptions}</select></div>
+      <div class="form-group"><label>Бюджет (USD)</label><input id="m-budget" type="number" value="${c.budget}"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Min CPM</label><input id="m-mincpm" type="number" step="0.01" value="${c.min_cpm}"></div>
+        <div class="form-group"><label>Max CPM</label><input id="m-maxcpm" type="number" step="0.01" value="${c.max_cpm}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Начало</label><input id="m-start" type="date" value="${c.starts_at?.slice(0,10)}"></div>
+        <div class="form-group"><label>Конец</label><input id="m-end" type="date" value="${c.ends_at?.slice(0,10)}"></div>
+      </div>
+      <div class="form-group"><label>Статус</label><select id="m-status">${statusOptions}</select></div>
+      <div class="form-group"><label>Комментарий</label><textarea id="m-notes">${c.notes||''}</textarea></div>
+    `, async () => {
+      try {
+        await db('contracts', 'PATCH', {
+          advertiser_id: document.getElementById('m-adv').value,
+          publisher_id: document.getElementById('m-pub').value,
+          budget: parseFloat(document.getElementById('m-budget').value),
+          min_cpm: parseFloat(document.getElementById('m-mincpm').value),
+          max_cpm: parseFloat(document.getElementById('m-maxcpm').value),
+          starts_at: document.getElementById('m-start').value,
+          ends_at: document.getElementById('m-end').value,
+          status: document.getElementById('m-status').value,
+          notes: document.getElementById('m-notes').value.trim() || null,
+        }, `?id=eq.${id}`);
+        toast('Контракт обновлён ✓');
+        closeModal();
+        loadContracts();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+    });
+  }
+
+  // ─── Edit Creative ──────────────────────────────────────────────────────────
+
+  async function editCreative(id) {
+    const [rows, contracts, advs, apps] = await Promise.all([
+      db('creatives', 'GET', null, `?id=eq.${id}`),
+      db('contracts', 'GET', null, '?select=id,advertiser_id,publisher_id,budget'),
+      db('advertisers', 'GET', null, '?select=id,name'),
+      db('apps', 'GET', null, '?select=id,name,publisher_id')
+    ]);
+    const c = rows[0];
+    const advMap = Object.fromEntries(advs.map(a => [a.id, a.name]));
+
+    // find current contract to get publisher_id for app filtering
+    const currentContract = contracts.find(ct => ct.id === c.contract_id);
+    const currentPublisherId = currentContract?.publisher_id;
+
+    const contractOptions = contracts.map(ct =>
+      `<option value="${ct.id}" data-publisher="${ct.publisher_id}" data-adv="${advMap[ct.advertiser_id]||'?'}" ${ct.id===c.contract_id?'selected':''}>${advMap[ct.advertiser_id]||'?'} — $${ct.budget}</option>`).join('');
+
+    const getAppOptions = (publisherId) =>
+      apps.filter(a => a.publisher_id === publisherId)
+          .map(a => `<option value="${a.id}" ${a.id===c.app_id?'selected':''}>${a.name}</option>`).join('') ||
+      '<option value="">— нет приложений —</option>';
+
+    const formatOptions = ['banner_static','banner_animated','banner_dynamic','audio','scrolling_text','video'].map(f =>
+      `<option value="${f}" ${f===c.format?'selected':''}>${f}</option>`).join('');
+    const deviceOptions = ['phone','watch','tablet'].map(d =>
+      `<option value="${d}" ${d===c.device_type?'selected':''}>${d}</option>`).join('');
+    const statusOptions = ['active','paused','completed'].map(s =>
+      `<option value="${s}" ${s===c.status?'selected':''}>${s}</option>`).join('');
+
+    // store apps for modal contract change
+    window._modalApps = apps;
+
+    openModal('Редактировать креатив', `
+      <div class="form-group">
+        <label>Контракт</label>
+        <select id="m-contract" onchange="onModalContractChange(this)">${contractOptions}</select>
+        <div id="m-contract-info" style="margin-top:6px;font-size:12px;color:var(--text2);font-family:'Space Mono',monospace;"></div>
+      </div>
+      <div class="form-group">
+        <label>Приложение</label>
+        <select id="m-app">${getAppOptions(currentPublisherId)}</select>
+      </div>
+      <div class="form-group"><label>Название</label><input id="m-name" type="text" value="${c.name}"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Формат</label><select id="m-format">${formatOptions}</select></div>
+        <div class="form-group"><label>Устройство</label><select id="m-device">${deviceOptions}</select></div>
+      </div>
+      <div class="form-group"><label>CPM Rate</label><input id="m-cpm" type="number" step="0.01" value="${c.cpm_rate}"></div>
+      <div class="form-group"><label>Статус</label><select id="m-status">${statusOptions}</select></div>
+      <div class="form-group"><label>Комментарий</label><textarea id="m-notes">${c.notes||''}</textarea></div>
+    `, async () => {
+      try {
+        await db('creatives', 'PATCH', {
+          contract_id: document.getElementById('m-contract').value,
+          app_id: document.getElementById('m-app').value,
+          name: document.getElementById('m-name').value,
+          format: document.getElementById('m-format').value,
+          device_type: document.getElementById('m-device').value,
+          cpm_rate: parseFloat(document.getElementById('m-cpm').value),
+          status: document.getElementById('m-status').value,
+          notes: document.getElementById('m-notes').value.trim() || null,
+        }, `?id=eq.${id}`);
+        toast('Креатив обновлён ✓');
+        closeModal();
+        loadCreatives();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+    });
+
+    // show info for current contract
+    setTimeout(() => onModalContractChange(document.getElementById('m-contract')), 0);
+  }
+
+  function onModalContractChange(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const publisherId = opt?.dataset.publisher;
+    const adv = opt?.dataset.adv || '—';
+    const apps = (window._modalApps||[]).filter(a => a.publisher_id === publisherId);
+    const pubName = apps[0] ? '' : '';
+
+    // update app select
+    const appSel = document.getElementById('m-app');
+    if (appSel) {
+      appSel.innerHTML = apps.length
+        ? apps.map(a => `<option value="${a.id}">${a.name}</option>`).join('')
+        : '<option value="">— нет приложений —</option>';
+    }
+
+    // update info
+    const info = document.getElementById('m-contract-info');
+    if (info) {
+      const pubMap = Object.fromEntries((window._pubs||[]).map(p => [p.id, p.name]));
+      info.textContent = `Advertiser: ${adv} · Publisher: ${pubMap[publisherId]||'—'}`;
+    }
+  }
+
+  // ─── Edit Targeting ─────────────────────────────────────────────────────────
+
+  async function editTargeting(id) {
+    const [rows, creatives] = await Promise.all([
+      db('targeting', 'GET', null, `?id=eq.${id}`),
+      db('creatives', 'GET', null, '?select=id,name')
+    ]);
+    const t = rows[0];
+    const creativeOptions = creatives.map(c =>
+      `<option value="${c.id}" ${c.id===t.creative_id?'selected':''}>${c.name}</option>`).join('');
+    const toTime = mins => mins != null ? String(Math.floor(mins/60)).padStart(2,'0') + ':' + String(mins%60).padStart(2,'0') : '';
+    const weatherOpts = ['sunny','rain','snow','fog','wind','cloudy'];
+    const dayOpts = ['mon','tue','wed','thu','fri','sat','sun'];
+    const dayLabels = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+    openModal('Редактировать таргетинг', `
+      <div class="form-group"><label>Креатив</label><select id="m-creative">${creativeOptions}</select></div>
+      <div class="form-group"><label>Основной язык</label><div class="lang-picker" id="m-lp-primary"></div></div>
+      <div class="form-group"><label>Дополнительные языки</label><div class="lang-picker" id="m-lp-secondary"></div></div>
+      <div class="form-group"><label>Изучает языки (OR)</label><div class="lang-picker" id="m-lp-learning"></div></div>
+      <div class="form-group"><label>Города</label><input id="m-cities" type="text" value="${(t.cities||[]).join(', ')}" placeholder="buenos_aires, moscow"></div>
+      <div class="form-group"><label>Погода</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+          ${weatherOpts.map(w => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;">
+            <input type="checkbox" value="${w}" class="m-weather" ${(t.weather_conditions||[]).includes(w)?'checked':''}> ${w}
+          </label>`).join('')}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Темп. мин (°C)</label><input id="m-tempmin" type="number" value="${t.temp_min??''}"></div>
+        <div class="form-group"><label>Темп. макс (°C)</label><input id="m-tempmax" type="number" value="${t.temp_max??''}"></div>
+      </div>
+      <div class="form-group"><label>Класс устройства</label>
+        <select id="m-tier">
+          <option value="" ${!t.device_tier?'selected':''}>Любой</option>
+          ${['flagship','mid','budget'].map(v => `<option value="${v}" ${t.device_tier===v?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>Подключено / профиль</label>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;"><input type="checkbox" id="m-headphones" ${t.has_headphones?'checked':''}> 🎧 Любые наушники</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;"><input type="checkbox" id="m-headphones-wired" ${t.has_wired_headphones?'checked':''}> 🎧 Проводные</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;"><input type="checkbox" id="m-watch" ${t.has_watch?'checked':''}> ⌚ Часы</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;"><input type="checkbox" id="m-migrant" ${t.is_migrant?'checked':''}> 🌍 Мигрант</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;"><input type="checkbox" id="m-large-font" ${t.large_font?'checked':''}> 🔤 Крупный шрифт</label>
+        </div>
+      </div>
+      <div class="form-group"><label>RAM (GB)</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="m-ram-min" type="number" placeholder="мин" min="1" max="64" style="width:100px;" value="${t.ram_min??''}">
+          <span style="color:var(--text2);">—</span>
+          <input id="m-ram-max" type="number" placeholder="макс" min="1" max="64" style="width:100px;" value="${t.ram_max??''}">
+        </div>
+      </div>
+      <div class="form-group"><label>Свободное место (GB)</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="m-storage-min" type="number" placeholder="мин" min="0" max="1024" style="width:100px;" value="${t.storage_free_min??''}">
+          <span style="color:var(--text2);">—</span>
+          <input id="m-storage-max" type="number" placeholder="макс" min="0" max="1024" style="width:100px;" value="${t.storage_free_max??''}">
+        </div>
+      </div>
+      <div class="form-group"><label>Всего storage (GB)</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="m-storage-total-min" type="number" placeholder="мин" min="0" max="2048" style="width:100px;" value="${t.storage_total_min??''}">
+          <span style="color:var(--text2);">—</span>
+          <input id="m-storage-total-max" type="number" placeholder="макс" min="0" max="2048" style="width:100px;" value="${t.storage_total_max??''}">
+        </div>
+      </div>
+      <div class="form-group"><label>Заряд батареи (%)</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="m-battery-min" type="number" placeholder="мин" min="0" max="100" style="width:100px;" value="${t.battery_min??''}">
+          <span style="color:var(--text2);">—</span>
+          <input id="m-battery-max" type="number" placeholder="макс" min="0" max="100" style="width:100px;" value="${t.battery_max??''}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Время с</label><input id="m-time-from" type="time" step="1800" value="${toTime(t.time_from)}"></div>
+        <div class="form-group"><label>Время до</label><input id="m-time-to" type="time" step="1800" value="${toTime(t.time_to)}"></div>
+      </div>
+      <div class="form-group"><label>Дни недели</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+          ${dayOpts.map((d,i) => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;">
+            <input type="checkbox" value="${d}" class="m-day" ${(t.days_of_week||[]).includes(d)?'checked':''}> ${dayLabels[i]}
+          </label>`).join('')}
+        </div>
+      </div>
+      <div class="form-group"><label>Комментарий</label><textarea id="m-targeting-notes">${t.notes||''}</textarea></div>
+    `, async () => {
+      const toMins = v => { if (!v) return null; const [h,m] = v.split(':').map(Number); return h*60+m; };
+      try {
+        await db('targeting', 'PATCH', {
+          creative_id: document.getElementById('m-creative').value,
+          language_primary: getLangPickerValue('m-lp-primary', true) || null,
+          language_secondary: getLangPickerValue('m-lp-secondary', false),
+          learning_languages: getLangPickerValue('m-lp-learning', false),
+          cities: document.getElementById('m-cities').value.split(',').map(s=>s.trim()).filter(Boolean),
+          weather_conditions: [...document.querySelectorAll('.m-weather:checked')].map(i=>i.value),
+          temp_min: document.getElementById('m-tempmin').value ? parseInt(document.getElementById('m-tempmin').value) : null,
+          temp_max: document.getElementById('m-tempmax').value ? parseInt(document.getElementById('m-tempmax').value) : null,
+          device_tier: document.getElementById('m-tier').value || null,
+          has_headphones: document.getElementById('m-headphones').checked || null,
+          has_wired_headphones: document.getElementById('m-headphones-wired').checked || null,
+          has_watch: document.getElementById('m-watch').checked || null,
+          is_migrant: document.getElementById('m-migrant').checked || null,
+          large_font: document.getElementById('m-large-font').checked || null,
+          ram_min: document.getElementById('m-ram-min').value ? parseInt(document.getElementById('m-ram-min').value) : null,
+          ram_max: document.getElementById('m-ram-max').value ? parseInt(document.getElementById('m-ram-max').value) : null,
+          storage_free_min: document.getElementById('m-storage-min').value ? parseInt(document.getElementById('m-storage-min').value) : null,
+          storage_free_max: document.getElementById('m-storage-max').value ? parseInt(document.getElementById('m-storage-max').value) : null,
+          storage_total_min: document.getElementById('m-storage-total-min').value ? parseInt(document.getElementById('m-storage-total-min').value) : null,
+          storage_total_max: document.getElementById('m-storage-total-max').value ? parseInt(document.getElementById('m-storage-total-max').value) : null,
+          battery_min: document.getElementById('m-battery-min').value ? parseInt(document.getElementById('m-battery-min').value) : null,
+          battery_max: document.getElementById('m-battery-max').value ? parseInt(document.getElementById('m-battery-max').value) : null,
+          time_from: toMins(document.getElementById('m-time-from').value),
+          time_to: toMins(document.getElementById('m-time-to').value),
+          days_of_week: [...document.querySelectorAll('.m-day:checked')].map(i=>i.value),
+          notes: document.getElementById('m-targeting-notes').value.trim() || null,
+        }, `?id=eq.${id}`);
+        toast('Таргетинг обновлён ✓');
+        closeModal();
+        loadTargeting();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+    });
+
+    // init modal lang pickers with current values
+    setTimeout(() => {
+      initLangPicker('m-lp-primary', t.language_primary ? [t.language_primary] : [], true);
+      initLangPicker('m-lp-secondary', t.language_secondary || [], false);
+      initLangPicker('m-lp-learning', t.learning_languages || [], false);
+    }, 0);
+  }
+
+  // ─── Language Picker ────────────────────────────────────────────────────────
+
+  const LANGS_SHORT = [
+    {code:'ru',name:'Русский'},{code:'en',name:'English'},{code:'es',name:'Español'},
+    {code:'fr',name:'Français'},{code:'de',name:'Deutsch'},{code:'pt',name:'Português'},
+    {code:'it',name:'Italiano'},{code:'zh',name:'中文'},{code:'ar',name:'العربية'},
+    {code:'hi',name:'हिन्दी'},{code:'ja',name:'日本語'},{code:'ko',name:'한국어'},
+    {code:'tr',name:'Türkçe'},{code:'pl',name:'Polski'},{code:'nl',name:'Nederlands'},
+    {code:'uk',name:'Українська'},{code:'he',name:'עברית'},{code:'fa',name:'فارسی'},
+    {code:'ro',name:'Română'},{code:'hu',name:'Magyar'},
+  ];
+
+  const LANGS_ALL = [
+    ...LANGS_SHORT,
+    {code:'af',name:'Afrikaans'},{code:'sq',name:'Shqip'},{code:'am',name:'አማርኛ'},
+    {code:'hy',name:'Հայերեն'},{code:'az',name:'Azərbaycan'},{code:'eu',name:'Euskara'},
+    {code:'be',name:'Беларуская'},{code:'bn',name:'বাংলা'},{code:'bs',name:'Bosanski'},
+    {code:'bg',name:'Български'},{code:'ca',name:'Català'},{code:'hr',name:'Hrvatski'},
+    {code:'cs',name:'Čeština'},{code:'da',name:'Dansk'},{code:'et',name:'Eesti'},
+    {code:'fi',name:'Suomi'},{code:'gl',name:'Galego'},{code:'ka',name:'ქართული'},
+    {code:'el',name:'Ελληνικά'},{code:'gu',name:'ગુજરાતી'},{code:'ht',name:'Kreyòl'},
+    {code:'ha',name:'Hausa'},{code:'id',name:'Bahasa Indonesia'},{code:'ig',name:'Igbo'},
+    {code:'is',name:'Íslenska'},{code:'jv',name:'Basa Jawa'},{code:'kn',name:'ಕನ್ನಡ'},
+    {code:'kk',name:'Қазақ'},{code:'km',name:'ខ្មែរ'},{code:'rw',name:'Kinyarwanda'},
+    {code:'ky',name:'Кыргызча'},{code:'lo',name:'ລາວ'},{code:'la',name:'Latina'},
+    {code:'lv',name:'Latviešu'},{code:'lt',name:'Lietuvių'},{code:'lb',name:'Lëtzebuergesch'},
+    {code:'mk',name:'Македонски'},{code:'mg',name:'Malagasy'},{code:'ms',name:'Bahasa Melayu'},
+    {code:'ml',name:'മലയാളം'},{code:'mt',name:'Malti'},{code:'mi',name:'Māori'},
+    {code:'mr',name:'मराठी'},{code:'mn',name:'Монгол'},{code:'my',name:'မြန်မာဘာသာ'},
+    {code:'ne',name:'नेपाली'},{code:'no',name:'Norsk'},{code:'or',name:'ଓଡ଼ିଆ'},
+    {code:'ps',name:'پښتو'},{code:'pa',name:'ਪੰਜਾਬੀ'},{code:'sr',name:'Српски'},
+    {code:'st',name:'Sesotho'},{code:'sn',name:'Shona'},{code:'sd',name:'سنڌي'},
+    {code:'si',name:'සිංහල'},{code:'sk',name:'Slovenčina'},{code:'sl',name:'Slovenščina'},
+    {code:'so',name:'Soomaali'},{code:'su',name:'Basa Sunda'},{code:'sw',name:'Kiswahili'},
+    {code:'tl',name:'Tagalog'},{code:'tg',name:'Тоҷикӣ'},{code:'ta',name:'தமிழ்'},
+    {code:'tt',name:'Татарча'},{code:'te',name:'తెలుగు'},{code:'th',name:'ภาษาไทย'},
+    {code:'tk',name:'Türkmençe'},{code:'ug',name:'ئۇيغۇرچە'},{code:'ur',name:'اردو'},
+    {code:'uz',name:'Oʻzbek'},{code:'vi',name:'Tiếng Việt'},{code:'cy',name:'Cymraeg'},
+    {code:'xh',name:'isiXhosa'},{code:'yi',name:'ייִדיש'},{code:'yo',name:'Yorùbá'},
+    {code:'zu',name:'isiZulu'},
+  ];
+
+  // state: { containerId -> Set of selected codes }
+  const langPickerState = {};
+
+  function initLangPicker(containerId, selected = [], singleSelect = false) {
+    langPickerState[containerId] = { selected: new Set(selected), showAll: false, singleSelect };
+    renderLangPicker(containerId);
+  }
+
+  function renderLangPicker(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const state = langPickerState[containerId];
+    if (!state) return;
+
+    // first render — create structure
+    if (!container.querySelector('.lang-trigger')) {
+      container.innerHTML = `
+        <div class="lang-trigger" id="lang-trigger-${containerId}"></div>
+        <div class="lang-dropdown" id="lang-dd-${containerId}">
+          <input type="text" class="lang-search" placeholder="Поиск языка...">
+          <div class="lang-grid" id="lang-grid-${containerId}"></div>
+          <div id="lang-showall-${containerId}"></div>
+        </div>`;
+
+      // attach events once
+      const trigger = container.querySelector('.lang-trigger');
+      trigger.addEventListener('click', () => toggleLangDropdown(containerId));
+
+      const search = container.querySelector('.lang-search');
+      search.addEventListener('input', e => { e.stopPropagation(); onLangSearch(containerId, e.target.value); });
+      search.addEventListener('click', e => e.stopPropagation());
+    }
+
+    const query = state.query || '';
+    const langs = state.showAll ? LANGS_ALL : LANGS_SHORT;
+    const filtered = query
+      ? LANGS_ALL.filter(l => l.name.toLowerCase().includes(query.toLowerCase()) || l.code.includes(query.toLowerCase()))
+      : langs;
+
+    // update trigger (tags + placeholder)
+    const trigger = container.querySelector('.lang-trigger');
+    trigger.classList.toggle('open', !!state.open);
+    trigger.innerHTML = [...state.selected].map(code => {
+      const l = LANGS_ALL.find(x => x.code === code);
+      return `<span class="lang-tag">${code}${l ? ' ' + l.name : ''}
+        <span class="lang-tag-remove">×</span>
+      </span>`;
+    }).join('') + (state.selected.size === 0 ? `<span class="lang-trigger-placeholder">Выбрать язык...</span>` : '');
+
+    // attach remove handlers
+    trigger.querySelectorAll('.lang-tag-remove').forEach((btn, i) => {
+      const code = [...state.selected][i];
+      btn.addEventListener('click', e => { e.stopPropagation(); removeLang(containerId, code); });
+    });
+
+    // update dropdown visibility
+    const dd = container.querySelector('.lang-dropdown');
+    dd.classList.toggle('open', !!state.open);
+
+    // update search value without losing focus
+    const search = container.querySelector('.lang-search');
+    if (document.activeElement !== search) search.value = query;
+
+    // update grid
+    const grid = container.querySelector('.lang-grid');
+    grid.innerHTML = filtered.map(l =>
+      `<button type="button" class="lang-btn${state.selected.has(l.code) ? ' selected' : ''}"
+        data-code="${l.code}">${l.code} ${l.name}</button>`
+    ).join('');
+    grid.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => toggleLang(containerId, btn.dataset.code));
+    });
+
+    // show all button
+    const showallDiv = container.querySelector(`#lang-showall-${containerId}`);
+    if (showallDiv) {
+      if (!state.showAll && !query) {
+        showallDiv.innerHTML = `<button type="button" class="lang-show-all">показать все языки ↓</button>`;
+        showallDiv.querySelector('button').addEventListener('click', e => { e.stopPropagation(); showAllLangs(containerId); });
+      } else if (!query) {
+        showallDiv.innerHTML = `<button type="button" class="lang-show-all">скрыть ↑</button>`;
+        showallDiv.querySelector('button').addEventListener('click', e => { e.stopPropagation(); hideAllLangs(containerId); });
+      } else {
+        showallDiv.innerHTML = '';
+      }
+    }
+  }
+
+  function toggleLangDropdown(containerId) {
+    const state = langPickerState[containerId];
+    if (!state) return;
+    const wasOpen = state.open;
+    // close all other pickers
+  // ─── API Key helpers ───────────────────────────────────────────────────────
+
+  function toggleKey(appId, key) {
+    const span = document.getElementById('key-' + appId);
+    const btn = span.nextElementSibling;
+    if (span.style.filter === 'none') {
+      span.textContent = '••••••••••••••••••••••••••••••••';
+      span.style.filter = 'blur(4px)';
+      span.style.userSelect = 'none';
+      btn.textContent = '👁 Показать';
+    } else {
+      span.textContent = key;
+      span.style.filter = 'none';
+      span.style.userSelect = 'text';
+      btn.textContent = '🙈 Скрыть';
+    }
+  }
+
+  async function regenerateKey(appId) {
+    if (!confirm('Перегенерировать API Key? Старый ключ перестанет работать — нужно будет обновить его в SDK.')) return;
+    try {
+      // Генерируем новый ключ на клиенте (64 hex символа = 32 байта)
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const newKey = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+      await db('apps', 'PATCH', { api_key: newKey }, `?id=eq.${appId}`);
+      toast('Ключ обновлён ✓ — не забудь обновить SDK');
+      loadApps();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  }
+
+    Object.keys(langPickerState).forEach(id => {
+      if (id !== containerId && langPickerState[id].open) {
+        langPickerState[id].open = false;
+        renderLangPicker(id);
+      }
+    });
+    state.open = !wasOpen;
+    renderLangPicker(containerId);
+    if (state.open) {
+      setTimeout(() => {
+        const input = document.querySelector(`#lang-dd-${containerId} .lang-search`);
+        if (input) input.focus();
+      }, 0);
+    }
+  }
+
+  function toggleLang(containerId, code) {
+    const state = langPickerState[containerId];
+    if (!state) return;
+    if (state.singleSelect) {
+      state.selected = state.selected.has(code) ? new Set() : new Set([code]);
+      state.open = false; // close after single select
+    } else {
+      if (state.selected.has(code)) state.selected.delete(code);
+      else state.selected.add(code);
+    }
+    renderLangPicker(containerId);
+  }
+
+  function removeLang(containerId, code) {
+    const state = langPickerState[containerId];
+    if (!state) return;
+    state.selected.delete(code);
+    renderLangPicker(containerId);
+  }
+
+  function onLangSearch(containerId, query) {
+    const state = langPickerState[containerId];
+    if (!state) return;
+    state.query = query;
+    renderLangPicker(containerId);
+  }
+
+  function showAllLangs(containerId) {
+    const state = langPickerState[containerId];
+    if (!state) return;
+    state.showAll = true;
+    renderLangPicker(containerId);
+  }
+
+  function hideAllLangs(containerId) {
+    const state = langPickerState[containerId];
+    if (!state) return;
+    state.showAll = false;
+    renderLangPicker(containerId);
+  }
+
+  // Returns string (singleSelect) or array (multi)
+  function getLangPickerValue(containerId, singleSelect) {
+    const state = langPickerState[containerId];
+    if (!state) return singleSelect ? null : [];
+    if (singleSelect) return state.selected.size > 0 ? [...state.selected][0] : null;
+    return [...state.selected];
+  }
+
+  async function duplicateTargeting(id) {
+    try {
+      const rows = await db('targeting', 'GET', null, `?id=eq.${id}`);
+      const { id: _id, created_at, ...data } = rows[0];
+      await db('targeting', 'POST', data);
+      toast('Таргетинг дублирован ✓');
+      loadTargeting();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function saveTargetingAsTemplate(id) {
+    // fetch targeting row
+    const rows = await db('targeting', 'GET', null, `?id=eq.${id}`);
+    const t = rows[0];
+
+    // fetch advertiser via creative → contract
+    let advertiser_id = null;
+    try {
+      const creative = (window._allCreatives || []).find(c => c.id === t.creative_id);
+      if (creative) {
+        const contracts = window._allContracts || [];
+        const contract = contracts.find(c => c.id === creative.contract_id);
+        if (contract) advertiser_id = contract.advertiser_id;
+      }
+    } catch(e) {}
+
+    // build targeting JSONB from all targeting fields (excluding id, creative_id, created_at)
+    const { id: _id, creative_id, created_at, ...targetingData } = t;
+
+    // ask for template name
+    const advs = window._advs || await db('advertisers', 'GET', null, '?select=id,name');
+    const advOptions = `<option value="" ${!advertiser_id ? 'selected' : ''}>— Все рекламодатели —</option>` +
+      advs.map(a =>
+        `<option value="${a.id}" ${a.id === advertiser_id ? 'selected' : ''}>${a.name}</option>`
+      ).join('');
+
+    openModal('Сохранить как шаблон', `
+      <div class="form-group"><label>Advertiser</label><select id="m-tmpl-adv">${advOptions}</select></div>
+      <div class="form-group"><label>Название шаблона</label>
+        <input id="m-tmpl-name" type="text" placeholder="Название шаблона...">
+      </div>
+    `, async () => {
+      const name = document.getElementById('m-tmpl-name').value.trim();
+      const adv_id = document.getElementById('m-tmpl-adv').value;
+      if (!name) { toast('Введи название', 'error'); return; }
+      try {
+        await db('templates', 'POST', {
+          advertiser_id: adv_id || null,  // null = для всех
+          name,
+          targeting: targetingData
+        });
+        toast('Шаблон сохранён ✓');
+        closeModal();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+    });
+  }
+
+  // ─── City Autocomplete ────────────────────────────────────────────────────────
+
+  let selectedCities = [];
+  let citySearchTimer = null;
+  let cityOptionIndex = -1;
+
+  async function onCityInput(input, ns = '') {
+    const q = input.value.trim();
+    const dropdownId = ns ? ns + '-city-dropdown' : 'city-dropdown';
+    const dropdown = document.getElementById(dropdownId);
+
+    if (q.length < 2) { dropdown.innerHTML = ''; return; }
+
+    clearTimeout(citySearchTimer);
+    dropdown.innerHTML = '<div class="city-dropdown-inner"><div class="city-loading">Поиск...</div></div>';
+
+    citySearchTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&featureType=city&limit=7&format=json&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const data = await res.json();
+
+        if (!data.length) {
+          dropdown.innerHTML = '<div class="city-dropdown-inner"><div class="city-loading">Ничего не найдено</div></div>';
+          return;
+        }
+
+        cityOptionIndex = -1;
+        dropdown.innerHTML = `<div class="city-dropdown-inner">${data.map((item, i) => {
+          const city = item.address?.city || item.address?.town || item.address?.village || item.name;
+          const country = item.address?.country || '';
+          const state = item.address?.state || '';
+          const detail = [state, country].filter(Boolean).join(', ');
+          return `<div class="city-option" data-city="${city}" data-detail="${detail}" onclick="selectCity('${city.replace(/'/g,"\'")}'+'|'+ns)">
+            <div class="city-option-name">${city}</div>
+            <div class="city-option-detail">${detail}</div>
+          </div>`;
+        }).join('')}</div>`;
+      } catch(e) {
+        dropdown.innerHTML = '<div class="city-dropdown-inner"><div class="city-loading">Ошибка запроса</div></div>';
+      }
+    }, 400);
+  }
+
+  function onCityKey(e, ns = '') {
+    const options = document.querySelectorAll('.city-option');
+    if (!options.length) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      cityOptionIndex = Math.min(cityOptionIndex + 1, options.length - 1);
+      options.forEach((o, i) => o.classList.toggle('selected', i === cityOptionIndex));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      cityOptionIndex = Math.max(cityOptionIndex - 1, 0);
+      options.forEach((o, i) => o.classList.toggle('selected', i === cityOptionIndex));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (cityOptionIndex >= 0) options[cityOptionIndex].click();
+    } else if (e.key === 'Escape') {
+      document.getElementById('city-dropdown').innerHTML = '';
+    }
+  }
+
+  function selectCity(cityWithNs) {
+    const parts = cityWithNs.split('|');
+    const city = parts[0];
+    const ns = parts[1] || '';
+    if (ns === 'tmpl') {
+      if (!tmplSelectedCities.includes(city)) {
+        tmplSelectedCities.push(city);
+        renderTmplCityTags();
+      }
+      document.getElementById('tmpl-cities-input').value = '';
+      document.getElementById('tmpl-city-dropdown').innerHTML = '';
+      document.getElementById('tmpl-cities-input').focus();
+    } else {
+      if (!selectedCities.includes(city)) {
+        selectedCities.push(city);
+        renderCityTags();
+      }
+      document.getElementById('targeting-cities-input').value = '';
+      document.getElementById('city-dropdown').innerHTML = '';
+      document.getElementById('targeting-cities-input').focus();
+    }
+  }
+
+  function removeCity(city) {
+    selectedCities = selectedCities.filter(c => c !== city);
+    renderCityTags();
+  }
+
+  function renderCityTags() {
+    const wrap = document.getElementById('city-tags');
+    wrap.innerHTML = selectedCities.map(c =>
+      `<div class="city-tag">${c}<span class="city-tag-remove" onclick="removeCity('${c.replace(/'/g,"\'")}')">×</span></div>`
+    ).join('');
+    // sync hidden input
+    document.getElementById('targeting-cities').value = selectedCities.join(',');
+  }
+
+  function resetCityAutocomplete() {
+    selectedCities = [];
+    renderCityTags();
+    document.getElementById('targeting-cities-input').value = '';
+    document.getElementById('city-dropdown').innerHTML = '';
+  }
+
+  // close dropdown on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#city-tags-wrap') && !e.target.closest('#city-dropdown')) {
+      document.getElementById('city-dropdown').innerHTML = '';
+    }
+    // close lang pickers
+    if (!e.target.closest('.lang-picker')) {
+
+
+    Object.keys(langPickerState).forEach(id => {
+        if (langPickerState[id].open) {
+          langPickerState[id].open = false;
+          renderLangPicker(id);
+        }
+      });
+    }
+  });
+
+
+// ─── Render-обёртки для store.js ─────────────────────────────────────────────
+// store.js вызывает render(state) при Realtime-обновлениях.
+// Эти функции перезагружают данные — простое и надёжное решение на этом этапе.
+
+function renderPublishers()  { loadPublishers(); }
+function renderAdvertisers() { loadAdvertisers(); }
+function renderApps()        { loadApps(); }
+function renderContracts()   { loadContracts(); }
+function renderCreatives()   { loadCreatives(); }
+function renderTargeting()   { loadTargeting(); }
+function renderTemplates()   { loadTemplates(); }
+
+// Экспортировать в window все функции вызываемые из HTML onclick=""
+window.addPublisher    = addPublisher;
+window.addAdvertiser   = addAdvertiser;
+window.addApp          = addApp;
+window.addContract     = addContract;
+window.addCreative     = addCreative;
+window.addDevice       = addDevice;
+window.addTargeting    = addTargeting;
+window.addTemplate     = addTemplate;
+window.editPublisher   = editPublisher;
+window.editAdvertiser  = editAdvertiser;
+window.editApp         = editApp;
+window.editContract    = editContract;
+window.editCreative    = editCreative;
+window.editDevice      = editDevice;
+window.editTargeting   = editTargeting;
+window.filterDevices   = filterDevices;
+window.onFileSelect    = onFileSelect;
+window.onBannerSelect  = onBannerSelect;
+window.onCreativeFormatChange  = onCreativeFormatChange;
+window.onCreativeDeviceChange  = onCreativeDeviceChange;
+window.onContractChange        = onContractChange;
+window.onTargetingCreativeChange = onTargetingCreativeChange;
+window.onCityInput     = onCityInput;
+window.onCityKey       = onCityKey;
+window.toggleKey       = toggleKey;
+window.regenerateKey   = regenerateKey;
+window.saveTargetingAsTemplate = saveTargetingAsTemplate;
+window.duplicateTargeting      = duplicateTargeting;
+window.onModalContractChange   = onModalContractChange;
+window.onDevTypeChange         = typeof onDevTypeChange !== 'undefined' ? onDevTypeChange : () => {};
+
+</script>
+</body>
+</html>

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BANERVE — Вход</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#0a0a0a; --surface:#111; --surface2:#1a1a1a;
+      --border:#2a2a2a; --accent:#e8ff4d;
+      --text:#f0f0f0; --text2:#888; --success:#4dff91; --error:#ff4d4d;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;
+      min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+    .logo{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:40px;}
+    .logo span{color:var(--accent);}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+      padding:40px;width:100%;max-width:420px;}
+    .tabs{display:flex;margin-bottom:28px;background:var(--surface2);border-radius:8px;padding:4px;}
+    .tab{flex:1;padding:9px;text-align:center;cursor:pointer;border-radius:6px;font-size:13px;
+      font-weight:700;color:var(--text2);border:none;background:none;font-family:'Syne',sans-serif;transition:all .15s;}
+    .tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.4);}
+    .form-group{margin-bottom:18px;}
+    label{display:block;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+      color:var(--text2);margin-bottom:7px;font-family:'Space Mono',monospace;}
+    input,select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+      padding:12px 14px;color:var(--text);font-family:'Syne',sans-serif;font-size:15px;
+      transition:border-color .15s;outline:none;}
+    input:focus,select:focus{border-color:var(--accent);}
+    select option{background:var(--surface2);}
+    .pwd-wrap{position:relative;}
+    .pwd-wrap input{padding-right:48px;}
+    .pwd-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;color:var(--text2);font-size:18px;padding:0;line-height:1;}
+    .pwd-eye:hover{color:var(--text);}
+    .btn{width:100%;padding:13px;border-radius:8px;border:none;cursor:pointer;
+      font-family:'Syne',sans-serif;font-size:15px;font-weight:700;
+      background:var(--accent);color:#000;transition:all .15s;margin-top:20px;}
+    .btn:hover:not(:disabled){background:#d4eb3a;transform:translateY(-1px);}
+    .btn:disabled{opacity:.5;cursor:not-allowed;}
+    .btn-google{background:var(--surface2);color:var(--text);border:1px solid var(--border);
+      display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0;margin-top:12px;letter-spacing:0;}
+    .btn-google:hover:not(:disabled){background:#222;transform:translateY(-1px);}
+    .msg{border-radius:8px;padding:12px 14px;font-size:13px;margin-bottom:18px;display:none;line-height:1.5;}
+    .msg.show{display:block;}
+    .msg.error{background:rgba(255,77,77,.1);border:1px solid rgba(255,77,77,.3);color:var(--error);}
+    .msg.success{background:rgba(77,255,145,.1);border:1px solid rgba(77,255,145,.3);color:var(--success);}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.3);
+      border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;
+      margin-right:8px;vertical-align:middle;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .hint{font-size:12px;color:var(--text2);margin-top:6px;font-family:'Space Mono',monospace;line-height:1.5;}
+    .strength-wrap{margin-top:6px;display:flex;gap:4px;align-items:center;}
+    .strength-bar{flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .2s;}
+    .strength-label{font-size:10px;font-family:'Space Mono',monospace;color:var(--text2);width:60px;text-align:right;}
+    .hp{position:absolute;left:-9999px;opacity:0;pointer-events:none;}
+    .or-divider{display:flex;align-items:center;gap:12px;margin-top:16px;}
+    .or-divider div{flex:1;height:1px;background:var(--border);}
+    .or-divider span{font-size:12px;color:var(--text2);font-family:'Space Mono',monospace;}
+    .footer{margin-top:24px;font-size:12px;color:var(--text2);font-family:'Space Mono',monospace;text-align:center;}
+    .footer a{color:var(--text2);text-decoration:underline;}
+    .footer a:hover{color:var(--text);}
+    .success-screen{text-align:center;padding:16px 0;}
+    .success-icon{font-size:48px;margin-bottom:16px;}
+    .success-title{font-size:20px;font-weight:700;margin-bottom:8px;}
+    .success-sub{font-size:13px;color:var(--text2);font-family:'Space Mono',monospace;line-height:1.6;}
+  </style>
+</head>
+<body>
+
+<div class="logo">BA<span>NERVE</span></div>
+
+<div class="card" id="card">
+  <div class="tabs">
+    <button class="tab active" id="tab-login"  onclick="window.switchTab('login')">Вход</button>
+    <button class="tab"        id="tab-signup" onclick="window.switchTab('signup')">Регистрация</button>
+  </div>
+
+  <div class="msg error"   id="msg-error"></div>
+  <div class="msg success" id="msg-success"></div>
+
+  <!-- ВХОД -->
+  <div id="form-login">
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Пароль</label>
+      <div class="pwd-wrap">
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+        <button class="pwd-eye" id="eye-login" type="button">👁</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Роль</label>
+      <select id="login-role">
+        <option value="advertiser">📣 Рекламодатель</option>
+        <option value="publisher">📱 Владелец приложения</option>
+      </select>
+    </div>
+    <button class="btn" id="login-btn">Войти →</button>
+    <div style="text-align:center;margin-top:12px;">
+      <a href="#" id="forgot-link" style="font-size:12px;color:var(--text2);font-family:'Space Mono',monospace;text-decoration:underline;">Забыл пароль?</a>
+    </div>
+    <div class="or-divider"><div></div><span>или</span><div></div></div>
+    <button class="btn btn-google" id="google-btn" type="button">
+      <svg width="18" height="18" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Войти через Google
+    </button>
+  </div>
+
+  <!-- РЕГИСТРАЦИЯ -->
+  <div id="form-signup" style="display:none;">
+    <div class="hp" aria-hidden="true">
+      <input type="text" id="hp-field" tabindex="-1" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Пароль</label>
+      <div class="pwd-wrap">
+        <input type="password" id="signup-password" placeholder="Минимум 8 символов"
+               autocomplete="new-password" oninput="window.checkStrength(this.value)">
+        <button class="pwd-eye" id="eye-signup" type="button">👁</button>
+      </div>
+      <div class="strength-wrap" id="strength-wrap" style="display:none;">
+        <div class="strength-bar" id="sb1"></div>
+        <div class="strength-bar" id="sb2"></div>
+        <div class="strength-bar" id="sb3"></div>
+        <div class="strength-bar" id="sb4"></div>
+        <span class="strength-label" id="strength-label"></span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Подтверди пароль</label>
+      <div class="pwd-wrap">
+        <input type="password" id="signup-password2" placeholder="••••••••" autocomplete="new-password">
+        <button class="pwd-eye" id="eye-signup2" type="button">👁</button>
+      </div>
+    </div>
+    <div class="hint">После регистрации на ваш email придёт письмо с подтверждением.</div>
+    <button class="btn" id="signup-btn">Создать аккаунт →</button>
+    <div class="or-divider"><div></div><span>или</span><div></div></div>
+    <button class="btn btn-google" id="google-signup-btn" type="button">
+      <svg width="18" height="18" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Зарегистрироваться через Google
+    </button>
+  </div>
+</div>
+
+<div class="footer">
+  <a href="mailto:support@banerve.io">Обратиться в поддержку</a>
+</div>
+
+<script>
+// ── Константы ────────────────────────────────────────────────────────────────
+const SUPABASE_URL      = 'https://syiguslqvexxsqncvpjs.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_NUK2SDmrmngpwoEiQyqllA_OyuoY49I';
+
+// ── Session helpers (нужны до DOMContentLoaded для OAuth callback) ─────────
+function saveSession(s) { localStorage.setItem('banerve_session', JSON.stringify(s)); }
+function getSession()   { try { return JSON.parse(localStorage.getItem('banerve_session')); } catch { return null; } }
+
+function redirect(session) {
+  if (session.user?.user_metadata?.role === 'admin') { window.location.href = 'admin.html'; return; }
+  const role  = session.selected_role || session.user?.user_metadata?.selected_role || 'advertiser';
+  const pages = { advertiser: 'advertiser.html', publisher: 'publisher.html' };
+  window.location.href = pages[role] || 'advertiser.html';
+}
+
+// ── Google OAuth — запустить ─────────────────────────────────────────────────
+function startGoogleOAuth(role) {
+  const redirectTo = window.location.origin + '/login.html?role=' + role;
+  window.location.href = SUPABASE_URL + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(redirectTo);
+}
+
+// ── Google OAuth — обработать callback (токены в #hash) ──────────────────────
+(function handleOAuthCallback() {
+  if (!window.location.hash) return;
+  const params        = new URLSearchParams(window.location.hash.slice(1));
+  const access_token  = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  const expires_in    = params.get('expires_in');
+  if (!access_token) return;
+  try {
+    const payload = JSON.parse(atob(access_token.split('.')[1]));
+    const role    = new URLSearchParams(window.location.search).get('role') || 'advertiser';
+    const session = {
+      access_token,
+      refresh_token,
+      expires_at:    Math.floor(Date.now() / 1000) + parseInt(expires_in || 3600),
+      expires_in:    parseInt(expires_in || 3600),
+      user:          { id: payload.sub, email: payload.email, user_metadata: payload.user_metadata || {} },
+      selected_role: role
+    };
+    saveSession(session);
+    history.replaceState(null, '', window.location.pathname);
+    redirect(session);
+  } catch(e) { console.error('OAuth callback error', e); }
+})();
+
+// ── Глобальные функции для onclick="" ────────────────────────────────────────
+window.switchTab = function(tab) {
+  document.getElementById('form-login').style.display  = tab === 'login'  ? '' : 'none';
+  document.getElementById('form-signup').style.display = tab === 'signup' ? '' : 'none';
+  document.getElementById('tab-login').classList.toggle('active',  tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('msg-error').classList.remove('show');
+  document.getElementById('msg-success').classList.remove('show');
+};
+
+window.checkStrength = function(pwd) {
+  const wrap = document.getElementById('strength-wrap');
+  if (!pwd) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  let score = 0;
+  if (pwd.length >= 8)                         score++;
+  if (pwd.length >= 12)                        score++;
+  if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd))                       score++;
+  if (/[^A-Za-z0-9]/.test(pwd))               score++;
+  score = Math.min(score, 4);
+  const colors = ['','#ff4d4d','#ff6b35','#e8ff4d','#4dff91'];
+  const labels = ['','Слабый','Средний','Хороший','Сильный'];
+  for (let i = 1; i <= 4; i++)
+    document.getElementById('sb'+i).style.background = i <= score ? colors[score] : 'var(--border)';
+  document.getElementById('strength-label').textContent = labels[score] || '';
+  document.getElementById('strength-label').style.color = colors[score] || 'var(--text2)';
+};
+
+// ── Всё остальное после загрузки DOM ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+
+  // Глаза
+  function makeEye(btnId, inputId) {
+    document.getElementById(btnId).addEventListener('click', function() {
+      const inp = document.getElementById(inputId);
+      if (inp.type === 'password') { inp.type = 'text';     this.textContent = '🙈'; }
+      else                         { inp.type = 'password'; this.textContent = '👁'; }
+    });
+  }
+  makeEye('eye-login',   'login-password');
+  makeEye('eye-signup',  'signup-password');
+  makeEye('eye-signup2', 'signup-password2');
+
+  // Enter
+  document.getElementById('login-email')   .addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('login-password').focus(); });
+  document.getElementById('login-password').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+  document.getElementById('signup-password') .addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('signup-password2').focus(); });
+  document.getElementById('signup-password2').addEventListener('keydown', e => { if (e.key==='Enter') doSignup(); });
+
+  // Кнопки
+  document.getElementById('login-btn') .addEventListener('click', doLogin);
+  document.getElementById('signup-btn').addEventListener('click', doSignup);
+  document.getElementById('google-btn').addEventListener('click', function() {
+    startGoogleOAuth(document.getElementById('login-role').value);
+  });
+  document.getElementById('google-signup-btn').addEventListener('click', function() {
+    startGoogleOAuth('advertiser');
+  });
+
+  // Проверить существующую сессию
+  (async function() {
+    const session = getSession();
+    if (!session) return;
+    if (session.expires_at > Math.floor(Date.now() / 1000)) { redirect(session); return; }
+    const refreshed = await refreshToken(session.refresh_token);
+    if (refreshed) redirect(refreshed);
+  })();
+
+  // ── Вход ──────────────────────────────────────────────────────────────
+  async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const role     = document.getElementById('login-role').value;
+    const btn      = document.getElementById('login-btn');
+
+    if (!email || !password) { showError('Заполни email и пароль'); return; }
+    if (!checkRateLimit())   { showError('Слишком много попыток. Подожди 5 минут.'); return; }
+
+    setLoading(btn, true, 'Войти →');
+    clearMsgs();
+
+    try {
+      const res  = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { showError(data.error_description || data.msg || 'Неверный email или пароль'); return; }
+      saveSession({ ...data, expires_at: Math.floor(Date.now()/1000) + data.expires_in, selected_role: role });
+      redirect(getSession());
+    } catch { showError('Ошибка соединения с сервером'); }
+    finally  { setLoading(btn, false, 'Войти →'); }
+  }
+
+  // ── Регистрация ────────────────────────────────────────────────────────
+  async function doSignup() {
+    const email = document.getElementById('signup-email').value.trim();
+    const pwd   = document.getElementById('signup-password').value;
+    const pwd2  = document.getElementById('signup-password2').value;
+    const role  = 'advertiser';
+    const hp    = document.getElementById('hp-field').value;
+    const btn   = document.getElementById('signup-btn');
+
+    if (hp)               return; // honeypot
+    if (!email)           { showError('Введи email'); return; }
+    if (!validateEmail(email)) { showError('Некорректный email'); return; }
+    if (pwd.length < 8)   { showError('Пароль минимум 8 символов'); return; }
+    if (pwd !== pwd2)     { showError('Пароли не совпадают'); return; }
+    if (!checkRateLimit()) { showError('Слишком много попыток. Подожди 5 минут.'); return; }
+
+    setLoading(btn, true, 'Создать аккаунт →');
+    clearMsgs();
+
+    try {
+      const res  = await fetch(SUPABASE_URL + '/auth/v1/signup', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pwd, data: { selected_role: role } })
+      });
+      const data = await res.json();
+      if (!res.ok) { showError(data.error_description || data.msg || 'Ошибка регистрации'); return; }
+
+      if (data.access_token) {
+        // Email confirmation выключен — сразу входим
+        saveSession({ ...data, expires_at: Math.floor(Date.now()/1000) + data.expires_in, selected_role: role });
+        redirect(getSession());
+      } else {
+        // Email confirmation включён — показать экран успеха
+        showConfirmScreen(email);
+      }
+    } catch { showError('Ошибка соединения с сервером'); }
+    finally  { setLoading(btn, false, 'Создать аккаунт →'); }
+  }
+
+  function showConfirmScreen(email) {
+    document.getElementById('card').innerHTML =
+      '<div class="success-screen">' +
+        '<div class="success-icon">📬</div>' +
+        '<div class="success-title">Проверь почту</div>' +
+        '<div class="success-sub">Мы отправили письмо на<br>' +
+        '<strong style="color:var(--accent);">' + email + '</strong><br><br>' +
+        'Перейди по ссылке в письме чтобы подтвердить аккаунт.<br>' +
+        'После этого вернись сюда и войди.</div>' +
+        '<button class="btn" style="margin-top:24px;" onclick="location.reload()">← Вернуться ко входу</button>' +
+      '</div>';
+  }
+
+  // ── Rate limiting ──────────────────────────────────────────────────────
+  function checkRateLimit() {
+    const raw  = localStorage.getItem('banerve_attempts');
+    const data = raw ? JSON.parse(raw) : { count: 0, since: Date.now() };
+    if ((Date.now() - data.since) / 1000 > 300) {
+      localStorage.setItem('banerve_attempts', JSON.stringify({ count: 1, since: Date.now() }));
+      return true;
+    }
+    if (data.count >= 5) return false;
+    data.count++;
+    localStorage.setItem('banerve_attempts', JSON.stringify(data));
+    return true;
+  }
+
+  // ── Refresh token ──────────────────────────────────────────────────────
+  async function refreshToken(token) {
+    try {
+      const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: token })
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const s = { ...data, expires_at: Math.floor(Date.now()/1000) + data.expires_in, selected_role: getSession()?.selected_role };
+      saveSession(s);
+      return s;
+    } catch { return null; }
+  }
+
+  // ── UI ─────────────────────────────────────────────────────────────────
+  function showError(msg)   { const el = document.getElementById('msg-error');   el.textContent = msg; el.classList.add('show'); }
+  function showSuccess(msg) { const el = document.getElementById('msg-success'); el.textContent = msg; el.classList.add('show'); }
+  function clearMsgs()      { document.getElementById('msg-error').classList.remove('show'); document.getElementById('msg-success').classList.remove('show'); }
+  function setLoading(btn, on, label) { btn.disabled = on; btn.innerHTML = on ? '<span class="spinner"></span>Подождите...' : label; }
+  function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+  // ── Восстановление пароля ──────────────────────────────────────────────
+  document.getElementById('forgot-link').addEventListener('click', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) { showError('Введи email чтобы восстановить пароль'); return; }
+    clearMsgs();
+    const link = this;
+    link.textContent = 'Отправляем...';
+    try {
+      const res = await fetch(SUPABASE_URL + '/auth/v1/recover', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      if (res.ok) { showSuccess('Письмо с инструкцией отправлено на ' + email); }
+      else        { showError('Не удалось отправить письмо'); }
+    } catch { showError('Ошибка соединения'); }
+    finally { link.textContent = 'Забыл пароль?'; }
+  });
+
+}); // DOMContentLoaded
+</script>
+</body>
+</html>

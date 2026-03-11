@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BANERVE — Владелец приложения</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./shared/panel.css">
+</head>
+<body>
+
+<header id="app-header"></header>
+
+<div class="layout">
+  <nav>
+    <div class="nav-section" style="margin-top:8px; margin-bottom:16px;">Обзор</div>
+    <div class="nav-item" data-page="dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+
+    <div class="divider" style="margin:12px 20px;"></div>
+
+    <div class="nav-section" style="margin-bottom:16px;">Приложения</div>
+    <div class="nav-item" data-page="apps">
+      <span class="nav-icon">📱</span> Мои приложения
+    </div>
+
+    <div class="divider" style="margin:12px 20px;"></div>
+
+    <div class="nav-section" style="margin-bottom:16px;">Аналитика</div>
+    <div class="nav-item" data-page="stats">
+      <span class="nav-icon">📈</span> Статистика
+    </div>
+
+    <div class="divider" style="margin:12px 20px;"></div>
+
+    <div class="nav-section" style="margin-bottom:16px;">Финансы</div>
+    <div class="nav-item" data-page="payouts">
+      <span class="nav-icon">💳</span> Выплаты
+    </div>
+    <div class="nav-item" data-page="transactions">
+      <span class="nav-icon">🧾</span> Транзакции
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <div class="page" id="page-dashboard">
+      <div class="page-title">Dashboard <span>·</span></div>
+      <div class="page-sub">Обзор ваших приложений</div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">Показы (всего)</div><div class="stat-value" id="stat-impressions">—</div><div class="stat-sub">за всё время</div></div>
+        <div class="stat-card"><div class="stat-label">Показы (месяц)</div><div class="stat-value" id="stat-month">—</div><div class="stat-sub">текущий месяц</div></div>
+        <div class="stat-card"><div class="stat-label">Приложений</div><div class="stat-value" id="stat-apps">—</div><div class="stat-sub">активных</div></div>
+        <div class="stat-card"><div class="stat-label">Баланс</div><div class="stat-value" id="stat-balance">—</div><div class="stat-sub">USD</div></div>
+      </div>
+
+      <div class="section-header"><div class="section-title">Топ приложений</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Приложение</th><th>Показы</th><th>Доход</th></tr></thead>
+          <tbody id="dash-top-apps">
+            <tr><td colspan="3" style="text-align:center;color:var(--text2);padding:32px;">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- APPS -->
+    <div class="page" id="page-apps">
+      <div class="page-title">Приложения <span>·</span></div>
+      <div class="page-sub">Управление вашими приложениями и SDK-ключами</div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start;">
+        <div>
+          <div class="form-card">
+            <div class="form-title">Добавить приложение</div>
+            <div class="form-group">
+              <label>App ID (bundle ID)</label>
+              <input type="text" id="app-appid" placeholder="com.company.appname">
+            </div>
+            <div class="form-group">
+              <label>Название</label>
+              <input type="text" id="app-name" placeholder="My App">
+            </div>
+            <div class="form-group">
+              <label>Форматы рекламы</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;" id="formats-check">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="banner_static"> Баннер
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="banner_animated"> Анимация
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="audio"> Аудио
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Устройства</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="phone" class="dev-cb"> Phone
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="watch" class="dev-cb"> Watch
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" value="tablet" class="dev-cb"> Tablet
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea id="app-notes" placeholder="Описание приложения..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addApp()">Добавить →</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-header"><div class="section-title">Мои приложения</div></div>
+          <div id="apps-list">
+            <div class="empty"><div class="empty-icon">◦</div><div class="empty-text">Загрузка...</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="page" id="page-stats">
+      <div class="page-title">Статистика <span>·</span></div>
+      <div class="page-sub">Показы по приложениям и дням</div>
+
+      <div style="display:flex; gap:12px; align-items:center; margin-bottom:24px; flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="setPeriod(7, this)">7 дней</button>
+        <button class="btn btn-outline btn-sm" onclick="setPeriod(30, this)">30 дней</button>
+        <button class="btn btn-outline btn-sm" onclick="setPeriod(90, this)">90 дней</button>
+        <div style="display:flex; gap:8px; align-items:center; margin-left:auto;">
+          <input type="date" id="stats-from" style="width:150px;" onchange="loadStats()">
+          <span style="color:var(--text2);">—</span>
+          <input type="date" id="stats-to" style="width:150px;" onchange="loadStats()">
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">Показы по дням</div>
+        <div class="bar-chart" id="chart-bars">
+          <div class="empty" style="width:100%;padding:24px;">Загрузка...</div>
+        </div>
+      </div>
+
+      <div class="section-header"><div class="section-title">По приложениям</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Приложение</th><th>Показы</th><th>Доход (USD)</th></tr></thead>
+          <tbody id="stats-by-app">
+            <tr><td colspan="3" style="text-align:center;color:var(--text2);padding:32px;">Выбери период</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAYOUTS -->
+    <div class="page" id="page-payouts">
+      <div class="page-title">Выплаты <span>·</span></div>
+      <div class="page-sub">История выплат и текущий баланс</div>
+
+      <div class="stat-grid" style="margin-bottom:32px;">
+        <div class="stat-card"><div class="stat-label">Текущий баланс</div><div class="stat-value" id="pay-balance">—</div><div class="stat-sub">USD</div></div>
+        <div class="stat-card"><div class="stat-label">Выплачено</div><div class="stat-value" id="pay-paid">—</div><div class="stat-sub">всего</div></div>
+        <div class="stat-card"><div class="stat-label">Заработано</div><div class="stat-value" id="pay-earned">—</div><div class="stat-sub">за показы</div></div>
+      </div>
+
+      <div class="section-header"><div class="section-title">История транзакций</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Дата</th><th>Тип</th><th>Сумма</th><th>Комментарий</th></tr>
+          </thead>
+          <tbody id="pay-list">
+            <tr><td colspan="4" style="text-align:center;color:var(--text2);padding:32px;">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:24px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px;">
+        <div style="font-size:14px; color:var(--text2); line-height:1.6;">
+          💡 Выплаты производятся администратором по согласованному графику.<br>
+          Для запроса выплаты свяжитесь с администратором.
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="page" id="page-transactions">
+      <div class="page-title">Транзакции <span>·</span></div>
+      <div class="page-sub">Полная история финансовых операций</div>
+
+      <div class="stat-grid" style="margin-bottom:32px;">
+        <div class="stat-card"><div class="stat-label">Заработано (показы)</div><div class="stat-value" id="txp-payout">—</div><div class="stat-sub">payout</div></div>
+        <div class="stat-card"><div class="stat-label">Выведено</div><div class="stat-value" id="txp-withdrawal">—</div><div class="stat-sub">withdrawal</div></div>
+        <div class="stat-card"><div class="stat-label">Баланс</div><div class="stat-value" id="txp-balance">—</div><div class="stat-sub">текущий</div></div>
+      </div>
+
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="section-title">История операций</div>
+        <select id="txp-filter" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text2);font-family:'Space Mono',monospace;font-size:12px;outline:none;cursor:pointer;" onchange="applyTxFilter()">
+          <option value="">Все типы</option>
+          <option value="payout">↗ payout</option>
+          <option value="withdrawal">↩ withdrawal</option>
+          <option value="commission">⚙ commission</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Тип</th>
+              <th>Сумма</th>
+              <th>Показов</th>
+              <th>Период</th>
+              <th>Комментарий</th>
+            </tr>
+          </thead>
+          <tbody id="txp-list">
+            <tr><td colspan="6" style="text-align:center;color:var(--text2);padding:32px;">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+import { initPage, db, fmt, fmtUSD, fmtDate, fmtDatetime } from './shared/auth.js';
+import { initNav, onPageEnter } from './shared/store.js';
+import { renderHeader, toast, openModal, closeModal, emptyState, badge, copyToClipboard } from './shared/components.js';
+
+// ─── Инициализация ─────────────────────────────────────────────────────────
+const { user } = await initPage({ role: null });
+renderHeader('Publisher', { email: user.email, showRoleSwitch: true });
+
+// Используем user.id напрямую — без таблицы publishers
+const publisherId = user.id;
+
+// ─── Регистрация страниц ───────────────────────────────────────────────────
+onPageEnter('dashboard', { load: loadDashboard, render: () => loadDashboard() });
+onPageEnter('apps',      { load: loadApps,      render: () => loadApps(),      realtime: ['apps'] });
+onPageEnter('stats',     { load: loadStats,     render: () => loadStats() });
+onPageEnter('payouts',       { load: loadPayouts,      render: () => loadPayouts(),      realtime: ['transactions'] });
+onPageEnter('transactions',  { load: loadTransactions, render: () => loadTransactions(), realtime: ['transactions'] });
+
+initNav('dashboard');
+
+// ─── Transactions page ──────────────────────────────────────────────────────
+let _allTxp = [];
+
+async function loadTransactions() {
+  try {
+    const txs = await db('transactions', 'GET', null,
+      `?publisher_id=eq.${publisherId}&order=created_at.desc`);
+    _allTxp = txs || [];
+    renderTransactions(_allTxp);
+  } catch(e) { toast('Ошибка загрузки транзакций: ' + e.message, 'error'); }
+}
+
+function renderTransactions(txs) {
+  const typeLabels = {
+    payout:     '↗ payout',
+    withdrawal: '↩ withdrawal',
+    commission: '⚙ commission',
+  };
+  const typeColors = {
+    payout:     'var(--success)',
+    withdrawal: '#ffb347',
+    commission: '#888',
+  };
+
+  const payout    = txs.filter(t => t.type === 'payout').reduce((s,t) => s + parseFloat(t.amount||0), 0);
+  const withdrawal= txs.filter(t => t.type === 'withdrawal').reduce((s,t) => s + Math.abs(parseFloat(t.amount||0)), 0);
+  const balance   = _allTxp.reduce((s,t) => s + parseFloat(t.amount||0), 0);
+
+  const elP  = document.getElementById('txp-payout');
+  const elW  = document.getElementById('txp-withdrawal');
+  const elB  = document.getElementById('txp-balance');
+  if (elP) elP.textContent = fmtUSD(payout);
+  if (elW) elW.textContent = fmtUSD(withdrawal);
+  if (elB) elB.textContent = fmtUSD(balance);
+
+  const tbody = document.getElementById('txp-list');
+  if (!tbody) return;
+  if (!txs.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:32px;">Нет транзакций</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = txs.map(t => `
+    <tr>
+      <td class="mono">${fmtDatetime(t.created_at)}</td>
+      <td><span style="
+        display:inline-block;padding:3px 10px;border-radius:20px;
+        font-size:11px;font-family:'Space Mono',monospace;font-weight:700;
+        background:${typeColors[t.type]||'#888'}22;color:${typeColors[t.type]||'#888'};
+      ">${typeLabels[t.type] || t.type}</span></td>
+      <td style="color:${parseFloat(t.amount)>=0?'var(--success)':'var(--error)'};font-family:'Space Mono',monospace;">
+        ${parseFloat(t.amount)>=0?'+':''}${fmtUSD(t.amount)}
+      </td>
+      <td style="color:var(--text2);font-family:'Space Mono',monospace;">${t.impressions_count ? fmt(t.impressions_count) : '—'}</td>
+      <td style="color:var(--text2);font-size:12px;">${t.period_date_from ? fmtDate(t.period_date_from) + (t.period_date_to && t.period_date_to !== t.period_date_from ? ' – ' + fmtDate(t.period_date_to) : '') : '—'}</td>
+      <td style="color:var(--text2);font-size:12px;">${t.notes || '—'}</td>
+    </tr>`).join('');
+}
+
+window.applyTxFilter = function() {
+  const type = document.getElementById('txp-filter')?.value || '';
+  const filtered = type ? _allTxp.filter(t => t.type === type) : _allTxp;
+  renderTransactions(filtered);
+};
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+async function getAppIds() {
+  const apps = await db('apps', 'GET', null, `?publisher_id=eq.${publisherId}&select=id`);
+  if (!apps?.length) return null;
+  return apps.map(a => a.id).join(',');
+}
+
+function calcBalance(txs) {
+  return (txs || []).reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+}
+
+// ─── Dashboard ─────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const appIds = await getAppIds();
+    const [apps, impressions, txs] = await Promise.all([
+      db('apps', 'GET', null, `?publisher_id=eq.${publisherId}&select=id,name,status`),
+      appIds ? db('impressions', 'GET', null, `?app_id=in.(${appIds})&select=count,period_date,app_id`) : Promise.resolve([]),
+      db('transactions', 'GET', null, `?publisher_id=eq.${publisherId}&select=amount,type`)
+    ]);
+
+    const total = (impressions || []).reduce((s, i) => s + (i.count || 0), 0);
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const month = (impressions || [])
+      .filter(i => i.period_date?.startsWith(thisMonth))
+      .reduce((s, i) => s + (i.count || 0), 0);
+    const activeApps = (apps || []).filter(a => a.status === 'active').length;
+    const balance = calcBalance(txs);
+
+    document.getElementById('stat-impressions').textContent = fmt(total);
+    document.getElementById('stat-month').textContent = fmt(month);
+    document.getElementById('stat-apps').textContent = activeApps;
+    document.getElementById('stat-balance').textContent = fmtUSD(balance);
+
+    // Топ приложений
+    const appMap = Object.fromEntries((apps || []).map(a => [a.id, a.name]));
+    const byApp = {};
+    (impressions || []).forEach(i => {
+      if (!byApp[i.app_id]) byApp[i.app_id] = 0;
+      byApp[i.app_id] += i.count || 0;
+    });
+
+    const sorted = Object.entries(byApp).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const tbody = document.getElementById('dash-top-apps');
+
+    if (!sorted.length) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text2);padding:32px;">Нет данных о показах</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = sorted.map(([appId, count]) => `
+      <tr>
+        <td>${appMap[appId] || appId}</td>
+        <td class="mono">${fmt(count)}</td>
+        <td class="mono" style="color:var(--success);">—</td>
+      </tr>`).join('');
+  } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+}
+
+// ─── Apps ──────────────────────────────────────────────────────────────────
+async function loadApps() {
+  const el = document.getElementById('apps-list');
+  try {
+    const apps = await db('apps', 'GET', null,
+      `?publisher_id=eq.${publisherId}&order=created_at.desc`);
+
+    if (!apps?.length) {
+      el.innerHTML = emptyState('Нет приложений', 'Добавьте первое приложение');
+      return;
+    }
+
+    el.innerHTML = apps.map(a => `
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-label">App</div>
+        <div class="card-title">${a.name}</div>
+        <div class="card-sub">${a.app_id}</div>
+        <div style="margin-top:6px;font-size:12px;color:var(--text2);">
+          ${(a.supported_devices||[]).join(', ')} · ${(a.supported_formats||[]).join(', ')}
+        </div>
+
+        <div class="key-box">
+          <div class="key-label">SDK API Key</div>
+          <div class="key-row">
+            <span class="key-value" id="key-${a.id}">••••••••••••••••••••••••••••••••</span>
+            <button class="key-btn" onclick="toggleKey('${a.id}','${a.api_key}')">👁 Показать</button>
+            <button class="key-btn" onclick="copyToClipboard('${a.api_key}', 'Ключ скопирован!')">📋</button>
+          </div>
+        </div>
+
+        ${a.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text2);">${a.notes}</div>` : ''}
+        ${badge(a.status || 'active')}
+
+        <div class="card-actions">
+          <button class="btn-icon" onclick="editApp('${a.id}')" title="Изменить">✏</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+}
+
+window.addApp = async function() {
+  const app_id = document.getElementById('app-appid').value.trim();
+  const name   = document.getElementById('app-name').value.trim();
+  const notes  = document.getElementById('app-notes').value.trim() || null;
+  const supported_formats = [...document.querySelectorAll('#formats-check input:checked')].map(i => i.value);
+  const supported_devices = [...document.querySelectorAll('.dev-cb:checked')].map(i => i.value);
+
+  if (!app_id || !name) { toast('Заполни App ID и название', 'error'); return; }
+
+  try {
+    await db('apps', 'POST', { publisher_id: publisherId, app_id, name, notes, supported_formats, supported_devices });
+    toast('Приложение добавлено ✓');
+    document.getElementById('app-appid').value = '';
+    document.getElementById('app-name').value = '';
+    document.getElementById('app-notes').value = '';
+    loadApps();
+  } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+};
+
+window.editApp = async function(id) {
+  const rows = await db('apps', 'GET', null, `?id=eq.${id}`);
+  const a = rows[0];
+  openModal('Редактировать приложение', `
+    <div class="form-group"><label>Название</label><input id="m-name" type="text" value="${a.name}"></div>
+    <div class="form-group"><label>Комментарий</label><textarea id="m-notes">${a.notes || ''}</textarea></div>
+  `, async () => {
+    try {
+      await db('apps', 'PATCH', {
+        name: document.getElementById('m-name').value.trim(),
+        notes: document.getElementById('m-notes').value.trim() || null
+      }, `?id=eq.${id}`);
+      toast('Приложение обновлено ✓');
+      closeModal();
+      loadApps();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  });
+};
+
+window.toggleKey = function(appId, key) {
+  const span = document.getElementById('key-' + appId);
+  const btn  = span.nextElementSibling;
+  if (span.classList.contains('visible')) {
+    span.textContent = '••••••••••••••••••••••••••••••••';
+    span.classList.remove('visible');
+    btn.textContent = '👁 Показать';
+  } else {
+    span.textContent = key;
+    span.classList.add('visible');
+    btn.textContent = '🙈 Скрыть';
+  }
+};
+
+// ─── Stats ─────────────────────────────────────────────────────────────────
+window.setPeriod = function(days, btn) {
+  document.querySelectorAll('.btn-outline.btn-sm').forEach(b => b.style.borderColor = '');
+  btn.style.borderColor = 'var(--accent)';
+  const to   = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - days + 1);
+  document.getElementById('stats-from').value = from.toISOString().slice(0, 10);
+  document.getElementById('stats-to').value   = to.toISOString().slice(0, 10);
+  loadStats();
+};
+
+window.loadStats = async function() {
+  const from = document.getElementById('stats-from').value;
+  const to   = document.getElementById('stats-to').value;
+  if (!from || !to) return;
+
+  try {
+    const appIds = await getAppIds();
+    if (!appIds) { toast('Нет приложений для отображения статистики', 'error'); return; }
+    const [impressions, apps] = await Promise.all([
+      db('impressions', 'GET', null,
+        `?app_id=in.(${appIds})&period_date=gte.${from}&period_date=lte.${to}&select=count,period_date,app_id&order=period_date.asc`),
+      db('apps', 'GET', null, `?publisher_id=eq.${publisherId}&select=id,name`)
+    ]);
+
+    renderChart(impressions || [], from, to);
+    renderStatsByApp(impressions || [], apps || []);
+  } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+};
+
+function renderChart(impressions, from, to) {
+  const el = document.getElementById('chart-bars');
+
+  // Сгруппировать по дням
+  const byDay = {};
+  impressions.forEach(i => {
+    byDay[i.period_date] = (byDay[i.period_date] || 0) + (i.count || 0);
+  });
+
+  const days = [];
+  const cur = new Date(from);
+  const end = new Date(to);
+  while (cur <= end) {
+    days.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  if (!days.length) { el.innerHTML = '<div class="empty" style="width:100%;padding:24px;">Нет данных</div>'; return; }
+
+  const max = Math.max(...days.map(d => byDay[d] || 0), 1);
+
+  el.innerHTML = days.map(d => {
+    const count = byDay[d] || 0;
+    const h = Math.max(2, Math.round((count / max) * 110));
+    const label = d.slice(5); // MM-DD
+    return `<div class="bar-col">
+      <div class="bar" style="height:${h}px;" title="${d}: ${fmt(count)} показов"></div>
+      <div class="bar-label">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderStatsByApp(impressions, apps) {
+  const appMap = Object.fromEntries(apps.map(a => [a.id, a.name]));
+  const byApp = {};
+  impressions.forEach(i => {
+    byApp[i.app_id] = (byApp[i.app_id] || 0) + (i.count || 0);
+  });
+
+  const sorted = Object.entries(byApp).sort((a, b) => b[1] - a[1]);
+  const tbody = document.getElementById('stats-by-app');
+
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text2);padding:32px;">Нет показов за этот период</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = sorted.map(([appId, count]) => `
+    <tr>
+      <td>${appMap[appId] || appId}</td>
+      <td class="mono">${fmt(count)}</td>
+      <td class="mono" style="color:var(--success);">—</td>
+    </tr>`).join('');
+}
+
+// ─── Payouts ───────────────────────────────────────────────────────────────
+async function loadPayouts() {
+  try {
+    const txs = await db('transactions', 'GET', null,
+      `?publisher_id=eq.${publisherId}&order=created_at.desc`);
+
+    const balance = calcBalance(txs || []);
+    const paid    = (txs || []).filter(t => t.type === 'payout').reduce((s, t) => s + Math.abs(parseFloat(t.amount || 0)), 0);
+    const earned  = (txs || []).filter(t => t.type === 'impression').reduce((s, t) => s + parseFloat(t.amount || 0), 0);
+
+    document.getElementById('pay-balance').textContent = fmtUSD(balance);
+    document.getElementById('pay-paid').textContent    = fmtUSD(paid);
+    document.getElementById('pay-earned').textContent  = fmtUSD(earned);
+
+    const tbody = document.getElementById('pay-list');
+    if (!txs?.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:32px;">Нет транзакций</td></tr>';
+      return;
+    }
+
+    const typeLabels = {
+      payout: '💸 Выплата', impression: '📊 Показы',
+      commission: '⚙ Комиссия', topup: '💰 Пополнение'
+    };
+
+    tbody.innerHTML = (txs || []).map(t => `
+      <tr>
+        <td class="mono">${fmtDatetime(t.created_at)}</td>
+        <td>${typeLabels[t.type] || t.type}</td>
+        <td style="color:${parseFloat(t.amount) >= 0 ? 'var(--success)' : 'var(--error)'};font-family:'Space Mono',monospace;">
+          ${parseFloat(t.amount) >= 0 ? '+' : ''}${fmtUSD(t.amount)}
+        </td>
+        <td style="color:var(--text2);font-size:12px;">${t.notes || '—'}</td>
+      </tr>`).join('');
+  } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+}
+
+// Экспорт для HTML onclick
+window.copyToClipboard = copyToClipboard;
+
+// Инициализировать период по умолчанию
+const _to   = new Date();
+const _from = new Date();
+_from.setDate(_from.getDate() - 29);
+document.getElementById('stats-from').value = _from.toISOString().slice(0, 10);
+document.getElementById('stats-to').value   = _to.toISOString().slice(0, 10);
+</script>
+</body>
+</html>

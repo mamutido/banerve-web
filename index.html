@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BANERVE — Privacy-First Ad Network for Mobile Apps</title>
+  <meta name="description" content="Reach real audiences through offline-first mobile apps. No personal data leaves the device. Contextual targeting at sensor level.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & Root ──────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0a0a;
+      --surface:  #111111;
+      --surface2: #1a1a1a;
+      --border:   #2a2a2a;
+      --accent:   #e8ff4d;
+      --accent2:  #ff6b35;
+      --text:     #f0f0f0;
+      --text2:    #666;
+      --text3:    #444;
+      --success:  #4dff91;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise texture overlay ──────────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* ── Typography ──────────────────────────────────────────────────────────── */
+    .mono { font-family: 'Space Mono', monospace; }
+
+    /* ── NAV ─────────────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 64px;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s, background 0.3s;
+    }
+
+    nav.scrolled {
+      background: rgba(10,10,10,0.92);
+      backdrop-filter: blur(12px);
+      border-color: var(--border);
+    }
+
+    .nav-logo {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo .dot {
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.6; }
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-nav-login {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text2);
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+      background: transparent;
+    }
+    .btn-nav-login:hover { color: var(--text); border-color: #555; }
+
+    .btn-nav-signup {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--bg);
+      text-decoration: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      background: var(--accent);
+      transition: all 0.15s;
+      border: 1px solid var(--accent);
+    }
+    .btn-nav-signup:hover { background: #fff; border-color: #fff; }
+
+    /* ── HERO ─────────────────────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 120px 48px 80px;
+      overflow: hidden;
+    }
+
+    /* Grid background */
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    /* Accent glow */
+    .hero-glow {
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(232,255,77,0.06) 0%, transparent 70%);
+      top: -100px; right: -100px;
+      pointer-events: none;
+    }
+
+    .hero-glow-2 {
+      position: absolute;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(255,107,53,0.04) 0%, transparent 70%);
+      bottom: 0; left: 200px;
+      pointer-events: none;
+    }
+
+    .hero-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .hero-label::before {
+      content: '';
+      display: inline-block;
+      width: 24px; height: 1px;
+      background: var(--accent);
+    }
+
+    .hero-title {
+      font-size: clamp(52px, 8vw, 112px);
+      font-weight: 800;
+      line-height: 0.92;
+      letter-spacing: -3px;
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+
+    .hero-title .accent { color: var(--accent); }
+    .hero-title .stroke {
+      -webkit-text-stroke: 1px rgba(240,240,240,0.3);
+      color: transparent;
+    }
+
+    .hero-sub {
+      margin-top: 36px;
+      font-size: 17px;
+      font-weight: 400;
+      color: var(--text2);
+      max-width: 520px;
+      line-height: 1.65;
+      position: relative;
+      z-index: 1;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+
+    .hero-actions {
+      margin-top: 48px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: relative;
+      z-index: 1;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+
+    .btn-primary {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      padding: 16px 32px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover {
+      background: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(232,255,77,0.2);
+    }
+    .btn-primary .arrow { transition: transform 0.2s; }
+    .btn-primary:hover .arrow { transform: translateX(4px); }
+
+    .btn-secondary {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text2);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 28px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: #555; color: var(--text); }
+
+    /* ── STATS ROW ───────────────────────────────────────────────────────────── */
+    .stats-row {
+      display: flex;
+      align-items: stretch;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+      margin-top: 72px;
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+
+    .stat-item {
+      flex: 1;
+      padding: 28px 0;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+
+    .stat-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-num .accent { color: var(--accent); }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text3);
+      letter-spacing: 1px;
+      font-family: 'Space Mono', monospace;
+      text-transform: uppercase;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SECTION BASE ─────────────────────────────────────────────────────────── */
+    section {
+      padding: 100px 48px;
+      position: relative;
+    }
+
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-label::before {
+      content: '';
+      display: inline-block;
+      width: 20px; height: 1px;
+      background: var(--accent);
+    }
+
+    .section-title {
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.05;
+      margin-bottom: 20px;
+    }
+
+    .section-sub {
+      font-size: 16px;
+      color: var(--text2);
+      line-height: 1.7;
+      max-width: 520px;
+    }
+
+    /* ── HOW IT WORKS ─────────────────────────────────────────────────────────── */
+    #how {
+      border-top: 1px solid var(--border);
+    }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin-top: 64px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .how-card {
+      padding: 40px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      transition: background 0.2s;
+    }
+    .how-card:hover { background: var(--surface); }
+    .how-card:nth-child(even) { border-right: none; }
+    .how-card:nth-last-child(-n+2) { border-bottom: none; }
+
+    .how-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--text3);
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+    }
+
+    .how-icon {
+      font-size: 28px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .how-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+    }
+
+    .how-text {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.65;
+    }
+
+    /* ── TARGETING SECTION ──────────────────────────────────────────────────── */
+    #targeting {
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .targeting-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+      margin-top: 64px;
+    }
+
+    .targeting-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 28px;
+    }
+
+    .chip {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      background: var(--surface2);
+      letter-spacing: 0.3px;
+      transition: all 0.15s;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+    .chip.active { background: rgba(232,255,77,0.08); border-color: var(--accent); color: var(--accent); }
+
+    /* Terminal-style targeting preview */
+    .targeting-terminal {
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+    }
+
+    .terminal-bar {
+      background: var(--surface);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .terminal-dot.r { background: #ff5f57; }
+    .terminal-dot.y { background: #febc2e; }
+    .terminal-dot.g { background: #28c840; }
+    .terminal-title { font-size: 11px; color: var(--text3); margin-left: 8px; letter-spacing: 1px; }
+
+    .terminal-body {
+      padding: 24px;
+      line-height: 2;
+    }
+
+    .t-comment { color: var(--text3); }
+    .t-key { color: #4d9fff; }
+    .t-val { color: var(--success); }
+    .t-val.str { color: var(--accent); }
+    .t-val.bool { color: #ff6b35; }
+    .t-bracket { color: var(--text2); }
+    .t-cursor {
+      display: inline-block;
+      width: 8px; height: 14px;
+      background: var(--accent);
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ── FORMATS SECTION ───────────────────────────────────────────────────── */
+    #formats {
+      border-top: 1px solid var(--border);
+    }
+
+    .formats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 64px;
+    }
+
+    .format-card {
+      background: var(--bg);
+      padding: 40px;
+      transition: background 0.2s;
+    }
+    .format-card:hover { background: var(--surface); }
+
+    .format-card.format-watch {
+      background: linear-gradient(135deg, rgba(232,255,77,0.03) 0%, transparent 60%);
+    }
+    .format-card.format-watch:hover {
+      background: linear-gradient(135deg, rgba(232,255,77,0.06) 0%, var(--surface) 60%);
+    }
+
+    .format-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .format-name {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+
+    .format-desc {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .format-platforms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .platform-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      padding: 4px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      color: var(--text3);
+    }
+
+    .platform-tag.accent-platform {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(232,255,77,0.06);
+    }
+
+    /* ── ROLES SECTION ─────────────────────────────────────────────────────── */
+    #roles {
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .roles-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 64px;
+    }
+
+    .role-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px 40px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .role-card:hover { border-color: #444; transform: translateY(-4px); }
+
+    .role-card.advertiser {
+      background: linear-gradient(135deg, rgba(232,255,77,0.03) 0%, transparent 60%);
+    }
+    .role-card.publisher {
+      background: linear-gradient(135deg, rgba(255,107,53,0.03) 0%, transparent 60%);
+    }
+
+    .role-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .role-card.advertiser .role-label { color: var(--accent); }
+    .role-card.publisher .role-label { color: var(--accent2); }
+
+    .role-title {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+
+    .role-desc {
+      font-size: 15px;
+      color: var(--text2);
+      line-height: 1.65;
+      margin-bottom: 32px;
+    }
+
+    .role-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+
+    .role-features li {
+      font-size: 13px;
+      color: var(--text2);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+    .role-features li::before {
+      content: '→';
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--text3);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .btn-role {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 13px 24px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .role-card.advertiser .btn-role {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    .role-card.advertiser .btn-role:hover {
+      background: #fff;
+      box-shadow: 0 6px 24px rgba(232,255,77,0.2);
+    }
+    .role-card.publisher .btn-role {
+      background: var(--accent2);
+      color: #fff;
+    }
+    .role-card.publisher .btn-role:hover {
+      background: #ff8555;
+      box-shadow: 0 6px 24px rgba(255,107,53,0.2);
+    }
+
+    /* Corner decoration */
+    .role-corner {
+      position: absolute;
+      top: -1px; right: -1px;
+      width: 80px; height: 80px;
+      opacity: 0.06;
+    }
+    .role-card.advertiser .role-corner { background: var(--accent); clip-path: polygon(100% 0, 0 0, 100% 100%); }
+    .role-card.publisher .role-corner { background: var(--accent2); clip-path: polygon(100% 0, 0 0, 100% 100%); }
+
+    /* ── PRIVACY SECTION ──────────────────────────────────────────────────── */
+    #privacy {
+      border-top: 1px solid var(--border);
+    }
+
+    .privacy-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      margin-top: 64px;
+    }
+
+    .privacy-principles {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .privacy-item {
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .privacy-item:last-child { border-bottom: none; }
+
+    .privacy-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .privacy-item-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
+    }
+
+    .privacy-item-text {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+
+    /* Big privacy statement */
+    .privacy-statement {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px;
+      text-align: center;
+    }
+
+    .privacy-quote {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.4;
+      letter-spacing: -0.5px;
+      margin-bottom: 20px;
+    }
+    .privacy-quote em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .privacy-quote-sub {
+      font-size: 13px;
+      color: var(--text2);
+      font-family: 'Space Mono', monospace;
+      line-height: 1.7;
+    }
+
+    .privacy-shield {
+      font-size: 64px;
+      margin-bottom: 24px;
+      display: block;
+    }
+
+    /* ── CTA SECTION ──────────────────────────────────────────────────────── */
+    #cta {
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      text-align: center;
+      padding: 120px 48px;
+    }
+
+    .cta-title {
+      font-size: clamp(40px, 5vw, 72px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.0;
+      margin-bottom: 24px;
+    }
+    .cta-title .accent { color: var(--accent); }
+
+    .cta-sub {
+      font-size: 17px;
+      color: var(--text2);
+      max-width: 480px;
+      margin: 0 auto 48px;
+      line-height: 1.65;
+    }
+
+    .cta-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    /* ── FOOTER ───────────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-logo {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+
+    .footer-copy {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--text3);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--text3);
+      text-decoration: none;
+      letter-spacing: 1px;
+      transition: color 0.15s;
+    }
+    .footer-links a:hover { color: var(--text2); }
+
+    /* ── Scroll animations ──────────────────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    /* ── Responsive ────────────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      nav { padding: 0 24px; }
+      section, .hero, #cta, footer { padding-left: 24px; padding-right: 24px; }
+      .hero-title { letter-spacing: -2px; }
+      .how-grid, .targeting-layout, .formats-grid,
+      .roles-grid, .privacy-layout { grid-template-columns: 1fr; }
+      .stats-row { flex-wrap: wrap; }
+      .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+      .stat-item:last-child { border-bottom: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     NAV
+     ════════════════════════════════════════════ -->
+<nav id="nav">
+  <a href="#" class="nav-logo">
+    <div class="dot"></div>
+    BANERVE
+  </a>
+  <div class="nav-actions">
+    <a href="login.html" class="btn-nav-login">Log in</a>
+    <a href="login.html#signup" class="btn-nav-signup">Get started →</a>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════
+     HERO
+     ════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow-2"></div>
+
+  <div class="hero-label">Private Ad Network · SDK for Android & iOS</div>
+
+  <h1 class="hero-title">
+    Ads that<br>
+    know the<br>
+    <span class="accent">moment.</span>
+  </h1>
+
+  <p class="hero-sub">
+    Contextual advertising for offline-first mobile apps.
+    Reach users through sensors, not surveillance —
+    weather, battery, headphones, time of day.
+    Zero personal data leaves the device.
+  </p>
+
+  <div class="hero-actions">
+    <a href="login.html#signup" class="btn-primary">
+      Start advertising <span class="arrow">→</span>
+    </a>
+    <a href="#how" class="btn-secondary">
+      See how it works
+    </a>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-num">Android<span class="accent"> &</span> iOS</div>
+      <div class="stat-label">SDK platforms</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">Apple<span class="accent"> ⌚</span></div>
+      <div class="stat-label">Watch support</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">3<span class="accent">%</span></div>
+      <div class="stat-label">Platform fee</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">97<span class="accent">%</span></div>
+      <div class="stat-label">Payout to publishers</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     HOW IT WORKS
+     ════════════════════════════════════════════ -->
+<section id="how">
+  <div class="section-label reveal">How it works</div>
+  <h2 class="section-title reveal reveal-delay-1">
+    Built for apps that<br>work without internet
+  </h2>
+  <p class="section-sub reveal reveal-delay-2">
+    BANERVE's SDK runs entirely on-device. No constant connection needed —
+    ad data syncs once a day over WiFi.
+  </p>
+
+  <div class="how-grid reveal reveal-delay-2">
+    <div class="how-card">
+      <div class="how-num">01</div>
+      <span class="how-icon">📲</span>
+      <div class="how-title">SDK integrates into your app</div>
+      <div class="how-text">Publishers embed the lightweight SDK for Android, iOS, or watchOS (Apple Watch). It initialises with a unique <code style="font-family:'Space Mono',monospace; font-size:11px; color:var(--accent); background:var(--surface2); padding:2px 5px; border-radius:3px;">app_id</code> and downloads creatives + targeting rules in the background.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">02</div>
+      <span class="how-icon">🧠</span>
+      <div class="how-title">Targeting runs on device</div>
+      <div class="how-text">Before every ad slot, the SDK checks signals locally — battery level, connected headphones, weather, language, time of day. No data is sent to any server. Privacy is structural, not policy.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">03</div>
+      <span class="how-icon">📦</span>
+      <div class="how-title">Impressions sync in batches</div>
+      <div class="how-text">Impression counts accumulate on-device and sync once per day via WiFi. The server receives only anonymous counters — never user profiles, never location history.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">04</div>
+      <span class="how-icon">⚡</span>
+      <div class="how-title">Automatic financial settlement</div>
+      <div class="how-text">Batch processing creates three ledger entries per ad pair: <span style="color:var(--accent);font-family:'Space Mono',monospace;font-size:11px;">impression</span> debit, <span style="color:#4dff91;font-family:'Space Mono',monospace;font-size:11px;">payout</span> to publisher, <span style="color:#ff6b35;font-family:'Space Mono',monospace;font-size:11px;">commission</span> to platform. Transparent, immutable ledger.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     TARGETING
+     ════════════════════════════════════════════ -->
+<section id="targeting">
+  <div class="section-label reveal">Targeting engine</div>
+  <h2 class="section-title reveal reveal-delay-1">
+    The right moment,<br>not the right profile
+  </h2>
+
+  <div class="targeting-layout">
+    <div class="reveal reveal-delay-1">
+      <p class="section-sub">
+        Traditional ad networks track who you are.
+        BANERVE targets what's happening right now —
+        sensor signals that indicate real-time intent.
+      </p>
+
+      <div style="margin-top: 36px;">
+        <div style="font-family:'Space Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:14px;">Targeting signals</div>
+        <div class="targeting-chips">
+          <span class="chip active">🔋 Battery level</span>
+          <span class="chip active">🎧 Headphones connected</span>
+          <span class="chip">⌚ Smartwatch paired</span>
+          <span class="chip">🌧 Weather & temperature</span>
+          <span class="chip active">🕐 Time of day</span>
+          <span class="chip">📅 Day of week</span>
+          <span class="chip active">🌍 Migrant status</span>
+          <span class="chip">🗣 Device language</span>
+          <span class="chip">📚 Languages being learned</span>
+          <span class="chip">📱 Device tier (flagship / mid / budget)</span>
+          <span class="chip">💾 Free storage</span>
+          <span class="chip">🔤 Large font mode</span>
+          <span class="chip">🏙 City</span>
+          <span class="chip">📐 Screen size</span>
+          <span class="chip">📱 Specific device models</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal reveal-delay-2">
+      <div class="targeting-terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot r"></div>
+          <div class="terminal-dot y"></div>
+          <div class="terminal-dot g"></div>
+          <div class="terminal-title">targeting · example scenario</div>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-comment">// Taxi app · rainy morning</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-bracket">{</span></div>
+          <div>&nbsp;&nbsp;<span class="t-key">weather_conditions</span><span class="t-bracket">: [</span><span class="t-val str">"rain"</span><span class="t-bracket">,</span> <span class="t-val str">"snow"</span><span class="t-bracket">],</span></div>
+          <div>&nbsp;&nbsp;<span class="t-key">time_from</span><span class="t-bracket">:</span> <span class="t-val">420</span><span class="t-bracket">,</span>&nbsp;&nbsp;<span class="t-comment">// 07:00</span></div>
+          <div>&nbsp;&nbsp;<span class="t-key">time_to</span><span class="t-bracket">:</span> <span class="t-val">600</span><span class="t-bracket">,</span>&nbsp;&nbsp;&nbsp;<span class="t-comment">// 10:00</span></div>
+          <div>&nbsp;&nbsp;<span class="t-key">battery_min</span><span class="t-bracket">:</span> <span class="t-val">20</span><span class="t-bracket">,</span></div>
+          <div>&nbsp;&nbsp;<span class="t-key">cities</span><span class="t-bracket">: [</span><span class="t-val str">"buenos_aires"</span><span class="t-bracket">],</span></div>
+          <div>&nbsp;&nbsp;<span class="t-key">days_of_week</span><span class="t-bracket">: [</span><span class="t-val str">"mon"</span><span class="t-bracket">..</span><span class="t-val str">"fri"</span><span class="t-bracket">]</span></div>
+          <div><span class="t-bracket">}</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-comment">// → Ad shown only when it rains,</span></div>
+          <div><span class="t-comment">// &nbsp;&nbsp; during commute hours, phone charged</span></div>
+          <div><span class="t-comment">// &nbsp;&nbsp; No user data stored or sent</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-val bool">✓</span> <span class="t-comment">On-device evaluation</span> <span class="t-cursor"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     AD FORMATS
+     ════════════════════════════════════════════ -->
+<section id="formats">
+  <div class="section-label reveal">Ad formats</div>
+  <h2 class="section-title reveal reveal-delay-1">
+    Every surface,<br>every screen
+  </h2>
+  <p class="section-sub reveal reveal-delay-2">
+    From phone to wrist — BANERVE supports rich ad formats across all platforms,
+    including native Apple Watch creatives.
+  </p>
+
+  <div class="formats-grid reveal reveal-delay-2">
+
+    <div class="format-card">
+      <div class="format-icon">🖼</div>
+      <div class="format-name">Banner ads</div>
+      <div class="format-desc">
+        Static, animated, or dynamic banners in standard IAB sizes (320×50, 300×250, 728×90).
+        Shown at transition points — page turns, level starts, list breaks — without interrupting
+        the user flow. Dynamic banners update content without re-downloading the creative.
+      </div>
+      <div class="format-platforms">
+        <span class="platform-tag">📱 Phone</span>
+        <span class="platform-tag">📟 Tablet</span>
+      </div>
+    </div>
+
+    <div class="format-card">
+      <div class="format-icon">🎧</div>
+      <div class="format-name">Audio ads</div>
+      <div class="format-desc">
+        Non-intrusive audio spots played when headphones are connected — delivered at the
+        exact moment of active listening. Can include an optional companion banner.
+        Supports sequential series: a multi-part narrative across several sessions,
+        building brand recall naturally over time.
+      </div>
+      <div class="format-platforms">
+        <span class="platform-tag">📱 Phone</span>
+        <span class="platform-tag">📟 Tablet</span>
+        <span class="platform-tag">⌚ Apple Watch</span>
+      </div>
+    </div>
+
+    <div class="format-card">
+      <div class="format-icon">🎬</div>
+      <div class="format-name">Video ads</div>
+      <div class="format-desc">
+        Full video creatives for apps with media playback contexts. Ideal for premium campaigns
+        where visual storytelling matters — product reveals, brand films, demonstrations.
+        Cached on-device so playback is instant even without a connection.
+      </div>
+      <div class="format-platforms">
+        <span class="platform-tag">📱 Phone</span>
+        <span class="platform-tag">📟 Tablet</span>
+      </div>
+    </div>
+
+    <div class="format-card format-watch">
+      <div class="format-icon">⌚</div>
+      <div class="format-name">Apple Watch ads</div>
+      <div class="format-desc">
+        Compact banner creatives designed for the wrist — minimal, glanceable, high-impact.
+        Shown in watchOS apps between interactions. Target users by paired watch model,
+        fitness context, or time of day. A format category most ad networks don't reach at all.
+      </div>
+      <div class="format-platforms">
+        <span class="platform-tag accent-platform">⌚ watchOS exclusive</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     ROLES
+     ════════════════════════════════════════════ -->
+<section id="roles">
+  <div class="section-label reveal">For every participant</div>
+  <h2 class="section-title reveal reveal-delay-1">Two sides,<br>one network</h2>
+
+  <div class="roles-grid">
+    <div class="role-card advertiser reveal reveal-delay-1">
+      <div class="role-corner"></div>
+      <div class="role-label">For advertisers</div>
+      <div class="role-title">Reach the right moment</div>
+      <div class="role-desc">Launch campaigns across a growing network of offline-first mobile apps. Set your budget, define your audience by context — not cookies — and track spend transparently.</div>
+      <ul class="role-features">
+        <li>Contextual targeting: weather, battery, headphones, device, language, time, city</li>
+        <li>Ad formats: banner, audio, video, scrolling text, Apple Watch creatives</li>
+        <li>Branding mode — exclusive ad slots within an app session</li>
+        <li>Sequential creatives that build narrative over multiple sessions</li>
+        <li>Optional quiz to verify ad attention before counting an impression</li>
+        <li>Real-time dashboard with spend, impressions, and CPM</li>
+        <li>Targeting templates to reuse proven audience configurations</li>
+      </ul>
+      <a href="login.html#signup" class="btn-role">Start a campaign →</a>
+    </div>
+
+    <div class="role-card publisher reveal reveal-delay-2">
+      <div class="role-corner"></div>
+      <div class="role-label">For publishers</div>
+      <div class="role-title">Monetise without tracking</div>
+      <div class="role-desc">Integrate the Android SDK into your app and earn from every verified impression. No user surveillance, no privacy risk — and transparent financials to the cent.</div>
+      <ul class="role-features">
+        <li>97% revenue share on every impression payout</li>
+        <li>Lightweight SDK — works fully offline, syncs once daily over WiFi</li>
+        <li>Precise slot control: format, frequency, delay, page interval</li>
+        <li>Immutable ledger — every payout traceable to the source batch</li>
+        <li>GDPR / LGPD compliant by architecture, not by policy</li>
+        <li>Earnings dashboard with breakdown by app, creative, and date</li>
+      </ul>
+      <a href="login.html#signup" class="btn-role">Register your app →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     PRIVACY
+     ════════════════════════════════════════════ -->
+<section id="privacy">
+  <div class="section-label reveal">Privacy by design</div>
+  <h2 class="section-title reveal reveal-delay-1">
+    Zero data leaves<br>the device
+  </h2>
+
+  <div class="privacy-layout">
+    <div class="privacy-principles reveal reveal-delay-1">
+      <div class="privacy-item">
+        <div class="privacy-icon">🔒</div>
+        <div>
+          <div class="privacy-item-title">On-device targeting</div>
+          <div class="privacy-item-text">All 20+ targeting rules are evaluated locally, before each ad slot. The server never receives user profiles, location history, or behavioral data.</div>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon">📊</div>
+        <div>
+          <div class="privacy-item-title">Anonymous counters only</div>
+          <div class="privacy-item-text">What reaches the server: a number. "Creative X was shown N times on date D in app Z." Nothing about who saw it or where they were.</div>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon">📶</div>
+        <div>
+          <div class="privacy-item-title">Offline-first SDK</div>
+          <div class="privacy-item-text">Ad content and targeting rules are cached locally. The app works and shows ads without any active internet connection. Sync happens once per day via WiFi.</div>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon">📋</div>
+        <div>
+          <div class="privacy-item-title">Immutable financial ledger</div>
+          <div class="privacy-item-text">Balances are never stored — they're always computed from the transaction log. Every financial event is a permanent, auditable record.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal reveal-delay-2">
+      <div class="privacy-statement">
+        <span class="privacy-shield">🛡</span>
+        <div class="privacy-quote">
+          "Personal data <em>never</em> leaves the user's device. Ever."
+        </div>
+        <div class="privacy-quote-sub">
+          This is structural — not a policy.<br>
+          The server has no API to receive it.<br>
+          GDPR · LGPD · Zero-knowledge architecture
+        </div>
+
+        <div style="margin-top: 32px; display: flex; flex-direction: column; gap: 10px; text-align: left;">
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:var(--text3); padding: 10px 14px; background: var(--surface2); border-radius: 8px;">
+            <span style="color:var(--success);">✓</span> &nbsp;No cookies, no fingerprinting
+          </div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:var(--text3); padding: 10px 14px; background: var(--surface2); border-radius: 8px;">
+            <span style="color:var(--success);">✓</span> &nbsp;No persistent user IDs
+          </div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:var(--text3); padding: 10px 14px; background: var(--surface2); border-radius: 8px;">
+            <span style="color:var(--success);">✓</span> &nbsp;No GPS or location data transmitted
+          </div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:var(--text3); padding: 10px 14px; background: var(--surface2); border-radius: 8px;">
+            <span style="color:var(--success);">✓</span> &nbsp;Targeting happens entirely on-device
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     CTA
+     ════════════════════════════════════════════ -->
+<section id="cta">
+  <div class="section-label reveal" style="justify-content:center;">Get started</div>
+  <h2 class="cta-title reveal reveal-delay-1">
+    Ready to reach<br>the right <span class="accent">moment?</span>
+  </h2>
+  <p class="cta-sub reveal reveal-delay-2">
+    Join BANERVE as an advertiser or publisher.
+    No tracking. No surveillance. Just context.
+  </p>
+  <div class="cta-actions reveal reveal-delay-3">
+    <a href="login.html#signup" class="btn-primary" style="font-size:13px; padding:18px 36px;">
+      Create account <span class="arrow">→</span>
+    </a>
+    <a href="login.html" class="btn-secondary">
+      Log in
+    </a>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     FOOTER
+     ════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-logo">BANERVE</div>
+  <div class="footer-links">
+    <a href="login.html">Login</a>
+    <a href="login.html#signup">Sign up</a>
+  </div>
+  <div class="footer-copy">© 2026 BANERVE · Private Ad Network</div>
+</footer>
+
+<script>
+  // ── Nav scroll effect ────────────────────────────────────────────────────
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  }, { passive: true });
+
+  // ── Scroll reveal ────────────────────────────────────────────────────────
+  const revealEls = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  revealEls.forEach(el => observer.observe(el));
+
+  // ── Chip hover interaction (targeting section) ───────────────────────────
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('mouseenter', () => {
+      chip.classList.add('active');
+    });
+    chip.addEventListener('mouseleave', () => {
+      if (!chip.dataset.sticky) chip.classList.remove('active');
+    });
+  });
+
+  // ── Smooth scroll for anchor links ───────────────────────────────────────
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', e => {
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+</body>
+</html>

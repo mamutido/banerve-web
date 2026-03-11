@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BANERVE · Transactions</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./shared/panel.css">
+  <style>
+    /* ── Цвета типов транзакций ─────────────────────────────────────────────── */
+    .tx-topup      { background: rgba(77,255,145,0.12);  color: #4dff91; }
+    .tx-impression { background: rgba(77,159,255,0.12);  color: #4d9fff; }
+    .tx-payout     { background: rgba(232,255,77,0.12);  color: #e8ff4d; }
+    .tx-commission { background: rgba(255,107,53,0.12);  color: #ff6b35; }
+    .tx-withdrawal { background: rgba(255,77,77,0.12);   color: #ff4d4d; }
+
+    /* ── Двухколоночный layout: сайдбар + контент ───────────────────────────── */
+    .tx-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      min-height: calc(100vh - 65px);
+    }
+    .tx-layout.no-sidebar { grid-template-columns: 1fr; }
+
+    .tx-sidebar {
+      border-right: 1px solid var(--border);
+      padding: 28px;
+      overflow-y: auto;
+      background: var(--surface);
+    }
+    .tx-sidebar.hidden { display: none; }
+
+    .tx-content { padding: 28px; overflow-y: auto; }
+
+    /* ── Тип-табы ────────────────────────────────────────────────────────────── */
+    .type-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin-bottom: 20px;
+    }
+    .type-tab {
+      padding: 7px 2px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      text-align: center;
+      transition: all 0.15s;
+      color: var(--text2);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .type-tab:hover { border-color: #555; color: var(--text); }
+    .type-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(232,255,77,0.08); }
+
+    /* ── Breakdown / hint блоки ─────────────────────────────────────────────── */
+    .breakdown {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: var(--text2);
+      font-family: 'Space Mono', monospace;
+      line-height: 1.8;
+      margin-bottom: 14px;
+    }
+    .breakdown strong { color: var(--text); }
+
+    /* ── Process status ─────────────────────────────────────────────────────── */
+    .process-status {
+      margin-top: 10px;
+      font-size: 11px;
+      font-family: 'Space Mono', monospace;
+      color: var(--text2);
+      line-height: 1.6;
+      display: none;
+    }
+
+    /* ── Summary-бар ─────────────────────────────────────────────────────────── */
+    .tx-summary {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .tx-sum-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .tx-sum-label {
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text2);
+      font-family: 'Space Mono', monospace;
+      margin-bottom: 6px;
+    }
+    .tx-sum-value {
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* ── Фильтры ─────────────────────────────────────────────────────────────── */
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      color: var(--text2);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .filter-select:focus { border-color: var(--accent); color: var(--text); }
+
+    /* ── Тип-бейдж в таблице ────────────────────────────────────────────────── */
+    .tx-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Кнопка удаления строки ─────────────────────────────────────────────── */
+    .btn-del {
+      background: none;
+      border: 1px solid transparent;
+      cursor: pointer;
+      color: var(--text2);
+      font-size: 12px;
+      padding: 3px 7px;
+      border-radius: 4px;
+      transition: all 0.15s;
+      font-family: 'Space Mono', monospace;
+    }
+    .btn-del:hover { border-color: var(--error); color: var(--error); background: rgba(255,77,77,0.08); }
+
+    /* ── Метки секций в сайдбаре ────────────────────────────────────────────── */
+    .panel-label {
+      font-size: 10px;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header id="app-header"></header>
+
+<div class="tx-layout" id="tx-layout">
+
+  <!-- ════════════════════════════════════════════
+       ЛЕВАЯ ПАНЕЛЬ — только для admin
+       ════════════════════════════════════════════ -->
+  <aside class="tx-sidebar" id="tx-sidebar">
+
+    <div class="panel-label">Добавить транзакцию</div>
+
+    <div class="type-tabs">
+      <div class="type-tab active" data-type="topup"      onclick="selectType('topup')">topup</div>
+      <div class="type-tab"        data-type="impression" onclick="selectType('impression')">impr.</div>
+      <div class="type-tab"        data-type="payout"     onclick="selectType('payout')">payout</div>
+      <div class="type-tab"        data-type="commission" onclick="selectType('commission')">comm.</div>
+      <div class="type-tab"        data-type="withdrawal" onclick="selectType('withdrawal')">withdr.</div>
+    </div>
+
+    <div class="form-group">
+      <label>Сумма (USD)</label>
+      <input type="number" id="tx-amount" placeholder="10.00" step="0.01" min="0">
+    </div>
+
+    <div class="form-group" id="field-advertiser">
+      <label>Advertiser</label>
+      <select id="tx-advertiser"><option value="">— выбрать —</option></select>
+    </div>
+
+    <div class="form-group" id="field-publisher">
+      <label>Publisher</label>
+      <select id="tx-publisher"><option value="">— выбрать —</option></select>
+    </div>
+
+    <div class="form-group" id="field-impression" style="display:none;">
+      <label>Impression batch</label>
+      <select id="tx-impression"><option value="">— выбрать —</option></select>
+    </div>
+
+    <div id="withdrawal-hint" style="display:none;" class="breakdown">
+      Одно поле: <strong>Advertiser</strong> — возврат рекламодателю ·
+      <strong>Publisher</strong> — вывод паблишера · оба пусты — вывод комиссии платформы ·
+      оба заполнены — ошибка
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;" id="btn-add" onclick="addTransaction()">
+      Записать →
+    </button>
+
+    <div class="divider"></div>
+
+    <div class="panel-label">Симуляция пакета показов</div>
+
+    <div class="breakdown">
+      Создаёт 3 транзакции сразу:<br>
+      <strong>impression</strong> — списание у advertiser<br>
+      <strong>payout</strong> — начисление publisher<br>
+      <strong>commission</strong> — комиссия 3%
+    </div>
+
+    <div class="form-group">
+      <label>Контракт</label>
+      <select id="sim-contract" onchange="updateSimBreakdown()">
+        <option value="">— нет контрактов —</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Сумма показов (USD)</label>
+      <input type="number" id="sim-amount" placeholder="10.00" step="0.01" min="0" oninput="updateSimBreakdown()">
+    </div>
+
+    <div id="sim-breakdown" class="breakdown" style="display:none;"></div>
+
+    <button class="btn btn-primary" style="width:100%;" id="btn-sim" onclick="simulateImpression()">
+      Симулировать пакет →
+    </button>
+
+    <div class="divider"></div>
+
+    <div class="panel-label">Автоматика</div>
+
+    <button class="btn btn-outline" style="width:100%;" id="btn-process" onclick="processUnhandledImpressions()">
+      ⚡ Обработать показы без транзакций
+    </button>
+    <div class="process-status" id="process-status"></div>
+
+    <button class="btn btn-outline" style="width:100%; margin-top:8px;" onclick="loadAll()">
+      ↺ Обновить
+    </button>
+
+  </aside>
+
+  <!-- ════════════════════════════════════════════
+       ПРАВАЯ ЧАСТЬ — таблица (все роли)
+       ════════════════════════════════════════════ -->
+  <div class="tx-content">
+
+    <!-- Summary карточки -->
+    <div class="tx-summary">
+      <div class="tx-sum-card">
+        <div class="tx-sum-label">Пополнения</div>
+        <div class="tx-sum-value tx-topup"      id="sum-topup">—</div>
+      </div>
+      <div class="tx-sum-card">
+        <div class="tx-sum-label">Показы</div>
+        <div class="tx-sum-value tx-impression" id="sum-impression">—</div>
+      </div>
+      <div class="tx-sum-card">
+        <div class="tx-sum-label">Выплаты</div>
+        <div class="tx-sum-value tx-payout"     id="sum-payout">—</div>
+      </div>
+      <div class="tx-sum-card">
+        <div class="tx-sum-label">Комиссия</div>
+        <div class="tx-sum-value tx-commission" id="sum-commission">—</div>
+      </div>
+      <div class="tx-sum-card">
+        <div class="tx-sum-label">Выводы</div>
+        <div class="tx-sum-value tx-withdrawal" id="sum-withdrawal">—</div>
+      </div>
+    </div>
+
+    <!-- Заголовок + фильтры -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <div style="font-size:18px; font-weight:700; font-family:'Syne',sans-serif;">
+        Транзакции
+        <span style="color:var(--text2); font-size:14px; font-weight:400; margin-left:6px;" id="tx-count"></span>
+      </div>
+      <div class="filters">
+        <select class="filter-select" id="filter-type" onchange="applyFilter()">
+          <option value="">Все типы</option>
+          <option value="topup">topup</option>
+          <option value="impression">impression</option>
+          <option value="payout">payout</option>
+          <option value="commission">commission</option>
+          <option value="withdrawal">withdrawal</option>
+        </select>
+        <!-- Показываются только для admin -->
+        <select class="filter-select" id="filter-advertiser" onchange="applyFilter()" style="display:none;">
+          <option value="">Все advertisers</option>
+        </select>
+        <select class="filter-select" id="filter-publisher" onchange="applyFilter()" style="display:none;">
+          <option value="">Все publishers</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Таблица -->
+    <div class="table-wrap">
+      <div id="tx-table">
+        <div class="loading">Загрузка...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+import { initPage, db, fmt, fmtUSD, fmtDate, fmtDatetime } from './shared/auth.js';
+import { renderHeader, toast, openConfirm } from './shared/components.js';
+
+// ─── Auth + роль ──────────────────────────────────────────────────────────────
+const { user } = await initPage({ role: null });
+
+const isAdmin = user?.user_metadata?.role === 'admin';
+const selectedRole = (() => {
+  try { return JSON.parse(localStorage.getItem('banerve_session'))?.selected_role ?? null; }
+  catch { return null; }
+})();
+
+// Фильтр по владельцу: для advertiser — по advertiser_id, для publisher — по publisher_id
+// ID берём напрямую из user.id, как в advertiser.html и publisher.html
+const scopeAdvertiserId = (!isAdmin && selectedRole === 'advertiser') ? user.id : null;
+const scopePublisherId  = (!isAdmin && selectedRole !== 'advertiser') ? user.id : null;
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+if (isAdmin) {
+  renderHeader('Admin');
+} else {
+  renderHeader(selectedRole === 'advertiser' ? 'Advertiser' : 'Publisher', {
+    email: user.email,
+    showRoleSwitch: true,
+  });
+}
+
+// ─── Скрыть/показать элементы в зависимости от роли ──────────────────────────
+if (!isAdmin) {
+  document.getElementById('tx-sidebar').classList.add('hidden');
+  document.getElementById('tx-layout').classList.add('no-sidebar');
+} else {
+  document.getElementById('filter-advertiser').style.display = '';
+  document.getElementById('filter-publisher').style.display  = '';
+}
+
+// ─── Состояние ────────────────────────────────────────────────────────────────
+let allTransactions = [];
+let selectedType    = 'topup';
+let _advMap = {};
+let _pubMap = {};
+
+// ─── Загрузка данных ──────────────────────────────────────────────────────────
+window.loadAll = loadAll;
+async function loadAll() {
+  try {
+    let txParams = '?order=created_at.desc';
+    if (scopeAdvertiserId) txParams += `&advertiser_id=eq.${scopeAdvertiserId}`;
+    if (scopePublisherId)  txParams += `&publisher_id=eq.${scopePublisherId}`;
+
+    let advs = [], pubs = [], contracts = [], impressions = [];
+
+    if (isAdmin) {
+      [allTransactions, advs, pubs, contracts, impressions] = await Promise.all([
+        db('transactions', 'GET', null, txParams),
+        db('advertisers',  'GET', null, '?select=id,name&order=name.asc'),
+        db('publishers',   'GET', null, '?select=id,name&order=name.asc'),
+        db('contracts',    'GET', null, '?select=id,advertiser_id,publisher_id,budget'),
+        db('impressions',  'GET', null, '?order=synced_at.desc&select=id,period_date,count&limit=300'),
+      ]);
+    } else {
+      allTransactions = await db('transactions', 'GET', null, txParams);
+    }
+
+    allTransactions = allTransactions || [];
+    _advMap = Object.fromEntries((advs || []).map(a => [a.id, a.name]));
+    _pubMap = Object.fromEntries((pubs  || []).map(p => [p.id, p.name]));
+
+    if (isAdmin) {
+      // Форма — выпадающие списки
+      fillSelect('tx-advertiser', advs, '— выбрать —');
+      fillSelect('tx-publisher',  pubs, '— выбрать —');
+
+      const impHtml = (impressions || [])
+        .map(i => `<option value="${i.id}">${i.period_date} · ${fmt(i.count)} показов</option>`)
+        .join('');
+      document.getElementById('tx-impression').innerHTML =
+        '<option value="">— выбрать —</option>' + impHtml;
+
+      document.getElementById('sim-contract').innerHTML =
+        (contracts || []).length
+          ? (contracts || []).map(c =>
+              `<option value="${c.id}" data-adv="${c.advertiser_id}" data-pub="${c.publisher_id}">` +
+              `${_advMap[c.advertiser_id] || '?'} → ${_pubMap[c.publisher_id] || '?'} ($${c.budget})</option>`
+            ).join('')
+          : '<option value="">— нет контрактов —</option>';
+
+      // Фильтры
+      fillFilterSelect('filter-advertiser', advs, 'Все advertisers');
+      fillFilterSelect('filter-publisher',  pubs, 'Все publishers');
+    }
+
+    updateSummary(allTransactions);
+    renderTable(allTransactions);
+
+  } catch(e) {
+    toast('Ошибка загрузки: ' + e.message, 'error');
+    console.error('[loadAll]', e);
+  }
+}
+
+function fillSelect(id, items, placeholder) {
+  document.getElementById(id).innerHTML =
+    `<option value="">${placeholder}</option>` +
+    (items || []).map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+}
+
+function fillFilterSelect(id, items, placeholder) {
+  document.getElementById(id).innerHTML =
+    `<option value="">${placeholder}</option>` +
+    (items || []).map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+}
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
+function updateSummary(txs) {
+  const sum = type => (txs || [])
+    .filter(t => t.type === type)
+    .reduce((s, t) => s + Math.abs(parseFloat(t.amount || 0)), 0);
+
+  document.getElementById('sum-topup').textContent      = fmtUSD(sum('topup'));
+  document.getElementById('sum-impression').textContent = fmtUSD(sum('impression'));
+  document.getElementById('sum-payout').textContent     = fmtUSD(sum('payout'));
+  document.getElementById('sum-commission').textContent = fmtUSD(sum('commission'));
+  document.getElementById('sum-withdrawal').textContent = fmtUSD(sum('withdrawal'));
+}
+
+// ─── Render table ─────────────────────────────────────────────────────────────
+function renderTable(txs) {
+  const el      = document.getElementById('tx-table');
+  const countEl = document.getElementById('tx-count');
+
+  if (!txs?.length) {
+    el.innerHTML = `<div class="empty">
+      <div class="empty-icon" style="font-size:32px;opacity:0.3;margin-bottom:12px;">◦</div>
+      <div class="empty-text">Нет транзакций</div>
+    </div>`;
+    if (countEl) countEl.textContent = '';
+    return;
+  }
+
+  if (countEl) countEl.textContent = `· ${txs.length}`;
+
+  el.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Тип</th>
+          <th>Сумма</th>
+          ${isAdmin ? '<th>Advertiser</th><th>Publisher</th>' : ''}
+          <th>Показов</th>
+          <th>Период</th>
+          ${isAdmin ? '<th></th>' : ''}
+        </tr>
+      </thead>
+      <tbody>
+        ${(txs || []).map(t => {
+          const isPos = parseFloat(t.amount) >= 0;
+          const advName = t.advertiser_id
+            ? (_advMap[t.advertiser_id] || `<span style="opacity:0.4;font-size:11px;">${t.advertiser_id.slice(0,8)}…</span>`)
+            : '—';
+          const pubName = t.publisher_id
+            ? (_pubMap[t.publisher_id]  || `<span style="opacity:0.4;font-size:11px;">${t.publisher_id.slice(0,8)}…</span>`)
+            : '—';
+          const period = t.period_date_from
+            ? fmtDate(t.period_date_from) + (t.period_date_to && t.period_date_to !== t.period_date_from ? ' – ' + fmtDate(t.period_date_to) : '')
+            : '—';
+
+          return `<tr>
+            <td class="mono">${t.created_at?.slice(0,16).replace('T',' ') || '—'}</td>
+            <td><span class="tx-badge tx-${t.type}">${t.type}</span></td>
+            <td style="font-family:'Space Mono',monospace; font-weight:700; color:${isPos ? 'var(--success)' : 'var(--error)'};">
+              ${isPos ? '+' : ''}${fmtUSD(t.amount)}
+            </td>
+            ${isAdmin ? `<td style="color:var(--text2);font-size:12px;">${advName}</td><td style="color:var(--text2);font-size:12px;">${pubName}</td>` : ''}
+            <td class="mono">${t.impressions_count ? fmt(t.impressions_count) : '—'}</td>
+            <td style="color:var(--text2);font-size:12px;">${period}</td>
+            ${isAdmin ? `<td><button class="btn-del" onclick="confirmDelete('${t.id}')">✕</button></td>` : ''}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ─── Filter ───────────────────────────────────────────────────────────────────
+window.applyFilter = function() {
+  const type  = document.getElementById('filter-type').value;
+  const advId = document.getElementById('filter-advertiser')?.value || '';
+  const pubId = document.getElementById('filter-publisher')?.value  || '';
+
+  let filtered = allTransactions;
+  if (type)  filtered = filtered.filter(t => t.type === type);
+  if (advId) filtered = filtered.filter(t => t.advertiser_id === advId);
+  if (pubId) filtered = filtered.filter(t => t.publisher_id  === pubId);
+
+  renderTable(filtered);
+};
+
+// ─── Выбор типа в форме ───────────────────────────────────────────────────────
+window.selectType = function(type) {
+  selectedType = type;
+  document.querySelectorAll('.type-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.type === type)
+  );
+  document.getElementById('field-advertiser').style.display =
+    ['topup','impression','withdrawal'].includes(type) ? '' : 'none';
+  document.getElementById('field-publisher').style.display =
+    ['payout','commission','withdrawal'].includes(type) ? '' : 'none';
+  document.getElementById('field-impression').style.display =
+    ['impression','payout','commission'].includes(type) ? '' : 'none';
+  document.getElementById('withdrawal-hint').style.display =
+    type === 'withdrawal' ? '' : 'none';
+};
+
+// ─── Добавить транзакцию вручную ──────────────────────────────────────────────
+window.addTransaction = async function() {
+  const amount = parseFloat(document.getElementById('tx-amount').value);
+  if (!amount) { toast('Укажи сумму', 'error'); return; }
+
+  if (selectedType === 'withdrawal') {
+    const hasAdv = !!document.getElementById('tx-advertiser').value;
+    const hasPub = !!document.getElementById('tx-publisher').value;
+    if (hasAdv && hasPub) {
+      toast('Вывод не может быть одновременно для advertiser и publisher', 'error');
+      return;
+    }
+  }
+
+  const body = { type: selectedType, amount };
+  const advId = document.getElementById('tx-advertiser').value || null;
+  const pubId = document.getElementById('tx-publisher').value  || null;
+  const impId = document.getElementById('tx-impression').value || null;
+  if (advId) body.advertiser_id         = advId;
+  if (pubId) body.publisher_id          = pubId;
+  if (impId) body.parent_transaction_id = impId;
+
+  const btn = document.getElementById('btn-add');
+  btn.disabled = true;
+  btn.textContent = 'Записываю...';
+  try {
+    await db('transactions', 'POST', body);
+    toast('Транзакция записана ✓');
+    document.getElementById('tx-amount').value = '';
+    await loadAll();
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Записать →';
+  }
+};
+
+// ─── Sim breakdown preview ────────────────────────────────────────────────────
+window.updateSimBreakdown = function() {
+  const amount = parseFloat(document.getElementById('sim-amount').value) || 0;
+  const el = document.getElementById('sim-breakdown');
+  if (!amount) { el.style.display = 'none'; return; }
+  const commission = amount * 0.03;
+  const payout     = amount - commission;
+  el.style.display = '';
+  el.innerHTML =
+    `impression: <strong>−$${amount.toFixed(4)}</strong> (advertiser)<br>` +
+    `payout: <strong>+$${payout.toFixed(4)}</strong> (publisher)<br>` +
+    `commission: <strong>+$${commission.toFixed(4)}</strong> (платформа)`;
+};
+
+// ─── Симулировать пакет показов ───────────────────────────────────────────────
+window.simulateImpression = async function() {
+  const sel = document.getElementById('sim-contract');
+  const opt = sel.options[sel.selectedIndex];
+  const advertiser_id = opt?.dataset.adv;
+  const publisher_id  = opt?.dataset.pub;
+  const amount = parseFloat(document.getElementById('sim-amount').value);
+
+  if (!amount || !advertiser_id || !publisher_id) {
+    toast('Заполни контракт и сумму', 'error'); return;
+  }
+
+  const commission = parseFloat((amount * 0.03).toFixed(4));
+  const payout     = parseFloat((amount - commission).toFixed(4));
+
+  const btn = document.getElementById('btn-sim');
+  btn.disabled = true;
+  btn.textContent = 'Создание...';
+  try {
+    await Promise.all([
+      db('transactions', 'POST', { type: 'impression',  amount,            advertiser_id }),
+      db('transactions', 'POST', { type: 'payout',      amount: payout,    publisher_id }),
+      db('transactions', 'POST', { type: 'commission',  amount: commission }),
+    ]);
+    toast('3 транзакции созданы ✓');
+    document.getElementById('sim-amount').value = '';
+    document.getElementById('sim-breakdown').style.display = 'none';
+    await loadAll();
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Симулировать пакет →';
+  }
+};
+
+// ─── Обработать необработанные показы ─────────────────────────────────────────
+window.processUnhandledImpressions = async function() {
+  const btn    = document.getElementById('btn-process');
+  const status = document.getElementById('process-status');
+  btn.disabled = true;
+  status.style.display = 'block';
+  status.textContent   = 'Загружаем данные...';
+
+  try {
+    const [impressions, contracts, creatives] = await Promise.all([
+      db('impressions', 'GET', null, '?transaction_id=is.null&order=period_date.asc'),
+      db('contracts',   'GET', null, '?select=id,advertiser_id,publisher_id'),
+      db('creatives',   'GET', null, '?select=id,cpm_rate'),
+    ]);
+
+    if (!impressions?.length) {
+      status.textContent = '✓ Все показы уже обработаны';
+      btn.disabled = false;
+      return;
+    }
+
+    const contractMap = Object.fromEntries((contracts || []).map(c => [c.id, c]));
+    const cpmMap      = Object.fromEntries((creatives || []).map(c => [c.id, c.cpm_rate || 0]));
+
+    const groups   = {};
+    const groupIds = {};
+
+    impressions.forEach(imp => {
+      const contract = contractMap[imp.contract_id];
+      if (!contract) return;
+      const key = `${imp.period_date}|${contract.advertiser_id}|${contract.publisher_id}`;
+      if (!groups[key]) {
+        groups[key]   = { period_date: imp.period_date, advertiser_id: contract.advertiser_id, publisher_id: contract.publisher_id, impressions_count: 0, amount: 0 };
+        groupIds[key] = [];
+      }
+      groups[key].impressions_count += (imp.count || 0);
+      groups[key].amount            += ((cpmMap[imp.creative_id] || 0) * (imp.count || 0)) / 1000;
+      groupIds[key].push(imp.id);
+    });
+
+    const batches = Object.entries(groups);
+    status.textContent = `${impressions.length} показов → ${batches.length} батчей. Создаём...`;
+
+    let done = 0, errors = 0;
+
+    for (const [key, g] of batches) {
+      const amount     = parseFloat(g.amount.toFixed(4));
+      const commission = parseFloat((amount * 0.03).toFixed(4));
+      const payout     = parseFloat((amount - commission).toFixed(4));
+      const base = { period_date_from: g.period_date, period_date_to: g.period_date, impressions_count: g.impressions_count };
+
+      try {
+        const resList = await db('transactions', 'POST', { ...base, type: 'impression', amount, advertiser_id: g.advertiser_id });
+        const txId = Array.isArray(resList) ? resList[0]?.id : resList?.id;
+
+        await Promise.all([
+          db('transactions', 'POST', { ...base, type: 'payout',     amount: payout,     publisher_id: g.publisher_id, ...(txId && { parent_transaction_id: txId }) }),
+          db('transactions', 'POST', { ...base, type: 'commission', amount: commission,                               ...(txId && { parent_transaction_id: txId }) }),
+        ]);
+
+        if (txId && groupIds[key]?.length) {
+          await db('impressions', 'PATCH', { transaction_id: txId }, `?id=in.(${groupIds[key].join(',')})`);
+        }
+        done++;
+        status.textContent = `Батчи... ${done}/${batches.length}`;
+      } catch(err) {
+        errors++;
+        console.error('[processUnhandled] batch error:', g, err);
+      }
+    }
+
+    status.textContent = `✓ Создано ${done * 3} транзакций (${done} батчей)${errors ? `, ошибок: ${errors}` : ''}`;
+    toast(`${done * 3} транзакций создано ✓`);
+    await loadAll();
+
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'error');
+    status.textContent = '✗ ' + e.message;
+    console.error('[processUnhandled]', e);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// ─── Удаление с подтверждением ────────────────────────────────────────────────
+window.confirmDelete = function(id) {
+  openConfirm('Удалить транзакцию? Это действие необратимо.', async () => {
+    try {
+      await db('transactions', 'DELETE', null, `?id=eq.${id}`);
+      toast('Удалено ✓');
+      await loadAll();
+    } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  });
+};
+
+// ─── Старт ────────────────────────────────────────────────────────────────────
+selectType('topup');
+loadAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BANERVE — Рекламодатель</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./shared/panel.css">
+</head>
+<body>
+
+<header id="app-header"></header>
+
+<div class="layout">
+  <nav>
+    <div class="nav-section" style="margin-top:8px; margin-bottom:16px;">Обзор</div>
+    <div class="nav-item" data-page="dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+
+    <div class="divider" style="margin:12px 20px;"></div>
+
+    <div class="nav-section" style="margin-bottom:16px;">Реклама</div>
+    <div class="nav-item" data-page="campaigns">
+      <span class="nav-icon">📄</span> Кампании
+    </div>
+    <div class="nav-item" data-page="creatives">
+      <span class="nav-icon">🎨</span> Креативы
+    </div>
+
+    <div class="divider" style="margin:12px 20px;"></div>
+
+    <div class="nav-section" style="margin-bottom:16px;">Финансы</div>
+    <div class="nav-item" data-page="balance">
+      <span class="nav-icon">💳</span> Баланс
+    </div>
+    <div class="nav-item" data-page="transactions">
+      <span class="nav-icon">🧾</span> Транзакции
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <div class="page" id="page-dashboard">
+      <div class="page-title">Dashboard <span>·</span></div>
+      <div class="page-sub">Статистика ваших кампаний</div>
+
+      <div class="stat-grid" id="dash-stats">
+        <div class="stat-card"><div class="stat-label">Показы (всего)</div><div class="stat-value" id="stat-impressions">—</div><div class="stat-sub">за всё время</div></div>
+        <div class="stat-card"><div class="stat-label">Показы (месяц)</div><div class="stat-value" id="stat-impressions-month">—</div><div class="stat-sub">текущий месяц</div></div>
+        <div class="stat-card"><div class="stat-label">Активные кампании</div><div class="stat-value" id="stat-campaigns">—</div><div class="stat-sub">из всех контрактов</div></div>
+        <div class="stat-card"><div class="stat-label">Баланс</div><div class="stat-value" id="stat-balance">—</div><div class="stat-sub">USD</div></div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-title">Кампании</div>
+      </div>
+      <div class="cards" id="dash-campaigns">
+        <div class="empty"><div class="empty-icon">◦</div><div class="empty-text">Загрузка...</div></div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGNS -->
+    <div class="page" id="page-campaigns">
+      <div class="page-title">Кампании <span>·</span></div>
+      <div class="page-sub">Ваши рекламные договоры</div>
+      <div class="cards" id="campaigns-list">
+        <div class="empty"><div class="empty-icon">◦</div><div class="empty-text">Загрузка...</div></div>
+      </div>
+    </div>
+
+    <!-- CREATIVES -->
+    <div class="page" id="page-creatives">
+      <div class="page-title">Креативы <span>·</span></div>
+      <div class="page-sub">Рекламные материалы</div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start;">
+        <div>
+          <div class="form-card">
+            <div class="form-title">Загрузить креатив</div>
+            <div class="form-group">
+              <label>Кампания</label>
+              <select id="cr-contract"></select>
+            </div>
+            <div class="form-group">
+              <label>Название</label>
+              <input type="text" id="cr-name" placeholder="Баннер для кампании">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Тип</label>
+                <select id="cr-format" onchange="onCrFormatChange()">
+                  <option value="banner_static">Баннер статичный</option>
+                  <option value="banner_animated">Баннер анимированный</option>
+                  <option value="audio">Аудио</option>
+                  <option value="scrolling_text">Прокрутка текста</option>
+                  <option value="video">Видео</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Устройство</label>
+                <select id="cr-device">
+                  <option value="phone">📱 Телефон</option>
+                  <option value="watch">⌚ Часы</option>
+                  <option value="tablet">🗒 Планшет</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>CPM Rate (USD)</label>
+              <input type="number" id="cr-cpm" placeholder="2.50" step="0.01">
+            </div>
+            <div class="form-group" id="cr-field-text" style="display:none;">
+              <label>Рекламный текст</label>
+              <textarea id="cr-ad-text" placeholder="Текст для прокрутки..." style="min-height:100px;"></textarea>
+            </div>
+            <div class="form-group" id="cr-field-media">
+              <label>Медиафайл</label>
+              <div class="file-upload">
+                <input type="file" id="cr-file" accept="image/*,audio/*,video/*" onchange="onCrFileSelect(this)">
+                <div class="file-upload-icon">📁</div>
+                <div class="file-upload-text">Нажми или перетащи файл</div>
+                <div class="file-upload-name" id="cr-file-name"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea id="cr-notes" placeholder="Заметки..."></textarea>
+            </div>
+            <button class="btn btn-primary" id="cr-submit" onclick="addCreative()">Загрузить →</button>
+          </div>
+        </div>
+        <div>
+          <div class="section-header"><div class="section-title">Мои креативы</div></div>
+          <div id="creatives-list">
+            <div class="empty"><div class="empty-icon">◦</div><div class="empty-text">Загрузка...</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BALANCE -->
+    <div class="page" id="page-balance">
+      <div class="page-title">Баланс <span>·</span></div>
+      <div class="page-sub">История транзакций и текущий баланс</div>
+
+      <div class="stat-grid" style="margin-bottom:32px;">
+        <div class="stat-card"><div class="stat-label">Текущий баланс</div><div class="stat-value" id="bal-current">—</div><div class="stat-sub">USD</div></div>
+        <div class="stat-card"><div class="stat-label">Пополнено</div><div class="stat-value" id="bal-topup">—</div><div class="stat-sub">всего</div></div>
+        <div class="stat-card"><div class="stat-label">Потрачено</div><div class="stat-value" id="bal-spent">—</div><div class="stat-sub">на рекламу</div></div>
+      </div>
+
+      <div class="section-header"><div class="section-title">История транзакций</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Тип</th>
+              <th>Сумма</th>
+              <th>Комментарий</th>
+            </tr>
+          </thead>
+          <tbody id="tx-list">
+            <tr><td colspan="4" style="text-align:center; color:var(--text2); padding:32px;">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:24px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px;">
+        <div style="font-size:14px; color:var(--text2); line-height:1.6;">
+          💡 Для пополнения баланса обратитесь к администратору.<br>
+          Пополнение проводится вручную после подтверждения оплаты.
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="page" id="page-transactions">
+      <div class="page-title">Транзакции <span>·</span></div>
+      <div class="page-sub">Полная история финансовых операций</div>
+
+      <div class="stat-grid" style="margin-bottom:32px;">
+        <div class="stat-card"><div class="stat-label">Пополнено</div><div class="stat-value" id="txp-topup">—</div><div class="stat-sub">всего topup</div></div>
+        <div class="stat-card"><div class="stat-label">Потрачено (показы)</div><div class="stat-value" id="txp-impression">—</div><div class="stat-sub">impression</div></div>
+        <div class="stat-card"><div class="stat-label">Возвраты</div><div class="stat-value" id="txp-withdrawal">—</div><div class="stat-sub">withdrawal</div></div>
+        <div class="stat-card"><div class="stat-label">Баланс</div><div class="stat-value" id="txp-balance">—</div><div class="stat-sub">текущий</div></div>
+      </div>
+
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="section-title">История операций</div>
+        <select id="txp-filter" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text2);font-family:'Space Mono',monospace;font-size:12px;outline:none;cursor:pointer;" onchange="applyTxFilter()">
+          <option value="">Все типы</option>
+          <option value="topup">💰 topup</option>
+          <option value="impression">📊 impression</option>
+          <option value="withdrawal">↩ withdrawal</option>
+          <option value="commission">⚙ commission</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Тип</th>
+              <th>Сумма</th>
+              <th>Показов</th>
+              <th>Период</th>
+              <th>Комментарий</th>
+            </tr>
+          </thead>
+          <tbody id="txp-list">
+            <tr><td colspan="6" style="text-align:center;color:var(--text2);padding:32px;">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+import { initPage, db, uploadFile, fmt, fmtUSD, fmtDate, fmtDatetime } from './shared/auth.js';
+import { initNav, onPageEnter } from './shared/store.js';
+import { renderHeader, toast, openConfirm, emptyState, badge, copyToClipboard } from './shared/components.js';
+
+// ─── Инициализация ─────────────────────────────────────────────────────────
+const { session, user } = await initPage({ role: null });
+renderHeader('Advertiser', { email: user.email, showRoleSwitch: true });
+
+// Используем user.id напрямую — без таблицы advertisers
+const advertiserId = user.id;
+
+// ─── Регистрация страниц ───────────────────────────────────────────────────
+onPageEnter('dashboard',  { load: loadDashboard,  render: () => loadDashboard() });
+onPageEnter('campaigns',  { load: loadCampaigns,  render: () => loadCampaigns(),  realtime: ['contracts'] });
+onPageEnter('creatives',  { load: loadCreatives,  render: () => loadCreatives(),  realtime: ['creatives'] });
+onPageEnter('balance',       { load: loadBalance,       render: () => loadBalance(),       realtime: ['transactions'] });
+onPageEnter('transactions',  { load: loadTransactions,  render: () => loadTransactions(),  realtime: ['transactions'] });
+
+initNav('dashboard');
+
+// ─── Dashboard ─────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [contracts, txs, impressions] = await Promise.all([
+      db('contracts', 'GET', null, `?advertiser_id=eq.${advertiserId}`),
+      db('transactions', 'GET', null, `?advertiser_id=eq.${advertiserId}`),
+      db('impressions', 'GET', null,
+        `?contract_id=in.(${await getContractIds()})&select=count,period_date`)
+    ]);
+
+    const totalImpressions = impressions.reduce((s, i) => s + (i.count || 0), 0);
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const monthImpressions = impressions
+      .filter(i => i.period_date?.startsWith(thisMonth))
+      .reduce((s, i) => s + (i.count || 0), 0);
+
+    const activeCampaigns = (contracts || []).filter(c => c.status === 'active').length;
+    const balance = calcBalance(txs || []);
+
+    document.getElementById('stat-impressions').textContent = fmt(totalImpressions);
+    document.getElementById('stat-impressions-month').textContent = fmt(monthImpressions);
+    document.getElementById('stat-campaigns').textContent = activeCampaigns;
+    document.getElementById('stat-balance').textContent = fmtUSD(balance);
+
+    // Показать карточки кампаний
+    const el = document.getElementById('dash-campaigns');
+    if (!contracts?.length) {
+      el.innerHTML = emptyState('Нет кампаний', 'Обратитесь к администратору для создания кампании');
+      return;
+    }
+    el.innerHTML = contracts.map(c => campaignCard(c, impressions)).join('');
+  } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+}
+
+// ─── Campaigns ─────────────────────────────────────────────────────────────
+async function loadCampaigns() {
+  const el = document.getElementById('campaigns-list');
+  try {
+    const [contracts, impressions] = await Promise.all([
+      db('contracts', 'GET', null, `?advertiser_id=eq.${advertiserId}&order=created_at.desc`),
+      db('impressions', 'GET', null, `?contract_id=in.(${await getContractIds()})&select=count,period_date,contract_id`)
+    ]);
+    if (!contracts?.length) {
+      el.innerHTML = emptyState('Нет кампаний', 'Обратитесь к администратору для создания кампании');
+      return;
+    }
+    el.innerHTML = contracts.map(c => campaignCard(c, impressions)).join('');
+  } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+}
+
+function campaignCard(c, impressions = []) {
+  const spent = (impressions || [])
+    .filter(i => i.contract_id === c.id)
+    .reduce((s, i) => s + (i.count || 0), 0);
+  const budgetPct = c.budget > 0 ? Math.min(100, (spent * (c.min_cpm / 1000)) / c.budget * 100) : 0;
+
+  return `<div class="card">
+    <div class="card-label">Кампания · ${c.starts_at?.slice(0,10)} — ${c.ends_at?.slice(0,10)}</div>
+    <div class="card-title">$${c.budget} бюджет</div>
+    <div class="card-sub">CPM: $${c.min_cpm} – $${c.max_cpm}</div>
+    <div class="progress-wrap"><div class="progress-bar" style="width:${budgetPct.toFixed(1)}%"></div></div>
+    <div style="font-size:11px; color:var(--text2); margin-top:4px; font-family:'Space Mono',monospace;">${fmt(spent)} показов · ${budgetPct.toFixed(1)}% бюджета</div>
+    ${badge(c.status)}
+    ${c.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text2);">${c.notes}</div>` : ''}
+  </div>`;
+}
+
+// ─── Creatives ─────────────────────────────────────────────────────────────
+async function loadCreatives() {
+  const el = document.getElementById('creatives-list');
+  try {
+    const [creatives, contracts] = await Promise.all([
+      db('creatives', 'GET', null,
+        `?contract_id=in.(${await getContractIds()})&order=created_at.desc`),
+      db('contracts', 'GET', null, `?advertiser_id=eq.${advertiserId}&select=id,budget`)
+    ]);
+
+    // Заполнить select кампаний для формы
+    const sel = document.getElementById('cr-contract');
+    if (contracts?.length) {
+      sel.innerHTML = contracts.map(c =>
+        `<option value="${c.id}">Кампания $${c.budget}</option>`
+      ).join('');
+    }
+
+    if (!creatives?.length) {
+      el.innerHTML = emptyState('Нет креативов', 'Загрузите первый рекламный материал');
+      return;
+    }
+
+    const typeLabels = {
+      banner_static: 'Баннер', banner_animated: 'Анимация',
+      banner_dynamic: 'Динамический', audio: 'Аудио',
+      scrolling_text: 'Прокрутка', video: 'Видео'
+    };
+    const deviceIcons = { phone: '📱', watch: '⌚', tablet: '🗒' };
+
+    el.innerHTML = creatives.map(c => `
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-label">${typeLabels[c.ad_type] || c.ad_type} · ${deviceIcons[c.device_type] || ''}</div>
+        <div class="card-title">${c.name}</div>
+        <div class="card-sub">CPM: $${c.cpm_rate}</div>
+        ${c.media_url ? `<div style="margin-top:8px;"><a href="${c.media_url}" target="_blank" style="color:var(--accent);font-size:12px;font-family:'Space Mono',monospace;">↗ Открыть файл</a></div>` : ''}
+        ${c.notes ? `<div style="margin-top:6px;font-size:12px;color:var(--text2);">${c.notes}</div>` : ''}
+        ${badge(c.status)}
+        ${c.status === 'pending' ? `<div style="font-size:11px;color:#4d9fff;margin-top:4px;font-family:'Space Mono',monospace;">⏳ Ожидает модерации</div>` : ''}
+      </div>`).join('');
+  } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+}
+
+// ─── Add Creative ──────────────────────────────────────────────────────────
+let _crFile = null;
+
+window.onCrFileSelect = function(input) {
+  _crFile = input.files[0];
+  document.getElementById('cr-file-name').textContent = _crFile?.name || '';
+};
+
+window.onCrFormatChange = function() {
+  const fmt = document.getElementById('cr-format').value;
+  const isText = fmt === 'scrolling_text';
+  document.getElementById('cr-field-text').style.display = isText ? '' : 'none';
+  document.getElementById('cr-field-media').style.display = isText ? 'none' : '';
+};
+
+window.addCreative = async function() {
+  const contract_id = document.getElementById('cr-contract').value;
+  const name = document.getElementById('cr-name').value.trim();
+  const ad_type = document.getElementById('cr-format').value;
+  const device_type = document.getElementById('cr-device').value;
+  const cpm_rate = parseFloat(document.getElementById('cr-cpm').value);
+  const notes = document.getElementById('cr-notes').value.trim() || null;
+  const isText = ad_type === 'scrolling_text';
+  const ad_text = document.getElementById('cr-ad-text').value.trim() || null;
+
+  if (!name || !cpm_rate) { toast('Заполни название и CPM', 'error'); return; }
+  if (!isText && !_crFile) { toast('Выбери медиафайл', 'error'); return; }
+  if (isText && !ad_text) { toast('Введи рекламный текст', 'error'); return; }
+
+  const btn = document.getElementById('cr-submit');
+  btn.disabled = true;
+  btn.textContent = 'Загрузка...';
+
+  try {
+    let media_url = null;
+    if (_crFile) {
+      media_url = await uploadFile(_crFile, advertiserId);
+    }
+    await db('creatives', 'POST', {
+      contract_id, name, ad_type, device_type, cpm_rate,
+      media_url, ad_text, notes, status: 'pending'
+    });
+    toast('Креатив отправлен на модерацию ✓');
+    document.getElementById('cr-name').value = '';
+    document.getElementById('cr-cpm').value = '';
+    document.getElementById('cr-notes').value = '';
+    document.getElementById('cr-file-name').textContent = '';
+    _crFile = null;
+    loadCreatives();
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Загрузить →';
+  }
+};
+
+// ─── Balance ───────────────────────────────────────────────────────────────
+async function loadBalance() {
+  try {
+    const txs = await db('transactions', 'GET', null,
+      `?advertiser_id=eq.${advertiserId}&order=created_at.desc`);
+
+    const balance = calcBalance(txs || []);
+    const topup   = (txs || []).filter(t => t.type === 'topup').reduce((s, t) => s + parseFloat(t.amount || 0), 0);
+    const spent   = (txs || []).filter(t => t.type === 'impression').reduce((s, t) => s + Math.abs(parseFloat(t.amount || 0)), 0);
+
+    document.getElementById('bal-current').textContent = fmtUSD(balance);
+    document.getElementById('bal-topup').textContent   = fmtUSD(topup);
+    document.getElementById('bal-spent').textContent   = fmtUSD(spent);
+
+    const tbody = document.getElementById('tx-list');
+    if (!txs?.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:32px;">Нет транзакций</td></tr>';
+      return;
+    }
+
+    const typeLabels = {
+      topup: '💰 Пополнение', impression: '📊 Показы',
+      withdrawal: '↩ Возврат', commission: '⚙ Комиссия'
+    };
+
+    tbody.innerHTML = txs.map(t => `
+      <tr>
+        <td class="mono">${fmtDatetime(t.created_at)}</td>
+        <td>${typeLabels[t.type] || t.type}</td>
+        <td style="color:${parseFloat(t.amount) >= 0 ? 'var(--success)' : 'var(--error)'}; font-family:'Space Mono',monospace;">
+          ${parseFloat(t.amount) >= 0 ? '+' : ''}${fmtUSD(t.amount)}
+        </td>
+        <td style="color:var(--text2); font-size:12px;">${t.notes || '—'}</td>
+      </tr>`).join('');
+  } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+}
+
+// ─── Transactions page ──────────────────────────────────────────────────────
+let _allTxp = [];
+
+async function loadTransactions() {
+  try {
+    const txs = await db('transactions', 'GET', null,
+      `?advertiser_id=eq.${advertiserId}&order=created_at.desc`);
+    _allTxp = txs || [];
+    renderTransactions(_allTxp);
+  } catch(e) { toast('Ошибка загрузки транзакций: ' + e.message, 'error'); }
+}
+
+function renderTransactions(txs) {
+  const typeLabels = {
+    topup:      '💰 topup',
+    impression: '📊 impression',
+    withdrawal: '↩ withdrawal',
+    commission: '⚙ commission',
+    payout:     '↗ payout',
+  };
+  const typeColors = {
+    topup:      'var(--success)',
+    impression: 'var(--error)',
+    withdrawal: '#ffb347',
+    commission: '#888',
+    payout:     'var(--success)',
+  };
+
+  const topup     = txs.filter(t => t.type === 'topup').reduce((s,t) => s + parseFloat(t.amount||0), 0);
+  const impression= txs.filter(t => t.type === 'impression').reduce((s,t) => s + Math.abs(parseFloat(t.amount||0)), 0);
+  const withdrawal= txs.filter(t => t.type === 'withdrawal').reduce((s,t) => s + Math.abs(parseFloat(t.amount||0)), 0);
+  const balance   = _allTxp.reduce((s,t) => s + parseFloat(t.amount||0), 0);
+
+  const elTop    = document.getElementById('txp-topup');
+  const elImp    = document.getElementById('txp-impression');
+  const elWith   = document.getElementById('txp-withdrawal');
+  const elBal    = document.getElementById('txp-balance');
+  if (elTop)  elTop.textContent  = fmtUSD(topup);
+  if (elImp)  elImp.textContent  = fmtUSD(impression);
+  if (elWith) elWith.textContent = fmtUSD(withdrawal);
+  if (elBal)  elBal.textContent  = fmtUSD(balance);
+
+  const tbody = document.getElementById('txp-list');
+  if (!tbody) return;
+  if (!txs.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:32px;">Нет транзакций</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = txs.map(t => `
+    <tr>
+      <td class="mono">${fmtDatetime(t.created_at)}</td>
+      <td><span style="
+        display:inline-block;padding:3px 10px;border-radius:20px;
+        font-size:11px;font-family:'Space Mono',monospace;font-weight:700;
+        background:${typeColors[t.type]||'#888'}22;color:${typeColors[t.type]||'#888'};
+      ">${typeLabels[t.type] || t.type}</span></td>
+      <td style="color:${parseFloat(t.amount)>=0?'var(--success)':'var(--error)'};font-family:'Space Mono',monospace;">
+        ${parseFloat(t.amount)>=0?'+':''}${fmtUSD(t.amount)}
+      </td>
+      <td style="color:var(--text2);font-family:'Space Mono',monospace;">${t.impressions_count ? fmt(t.impressions_count) : '—'}</td>
+      <td style="color:var(--text2);font-size:12px;">${t.period_date_from ? fmtDate(t.period_date_from) + (t.period_date_to && t.period_date_to !== t.period_date_from ? ' – ' + fmtDate(t.period_date_to) : '') : '—'}</td>
+      <td style="color:var(--text2);font-size:12px;">${t.notes || '—'}</td>
+    </tr>`).join('');
+}
+
+window.applyTxFilter = function() {
+  const type = document.getElementById('txp-filter')?.value || '';
+  const filtered = type ? _allTxp.filter(t => t.type === type) : _allTxp;
+  renderTransactions(filtered);
+};
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+async function getContractIds() {
+  const contracts = await db('contracts', 'GET', null, `?advertiser_id=eq.${advertiserId}&select=id`);
+  if (!contracts?.length) return 'null';
+  return contracts.map(c => c.id).join(',');
+}
+
+function calcBalance(txs) {
+  return txs.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+}
+</script>
+</body>
+</html>
