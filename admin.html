@@ -253,6 +253,9 @@
     <a href="transactions.html" class="nav-item" style="text-decoration:none;">
       <span class="nav-icon">💳</span> Transactions
     </a>
+    <div class="nav-item" data-page="withdrawals">
+      <span class="nav-icon">💸</span> Выводы
+    </div>
   </nav>
 
   <main>
@@ -983,7 +986,50 @@
       </div>
     </div>
 
-  </main>
+      <!-- WITHDRAWALS (Crypto) -->
+    <div class="page" id="page-withdrawals">
+      <div class="page-title">Выводы <span>·</span></div>
+      <div class="page-sub">Заявки паблишеров на вывод USDT</div>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <label style="font-size:12px; color:var(--text2); font-family:'Space Mono',monospace;">Фильтр:</label>
+          <select id="withdraw-filter" style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--text); font-family:'Syne',sans-serif; font-size:13px; outline:none;">
+            <option value="pending">⏳ Ожидают подтверждения</option>
+            <option value="all">Все</option>
+            <option value="paid">✓ Выплачены</option>
+            <option value="rejected">✗ Отклонены</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <label style="font-size:12px; color:var(--text2); font-family:'Space Mono',monospace;">Автоподтверждение:</label>
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="auto-approve-toggle" style="width:16px; height:16px; cursor:pointer;">
+            <span style="font-size:13px; color:var(--text2); font-family:'Space Mono',monospace;" id="auto-approve-label">Выкл</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Паблишер</th>
+              <th>Сумма USDT</th>
+              <th>Адрес</th>
+              <th>Статус</th>
+              <th>Действие</th>
+            </tr>
+          </thead>
+          <tbody id="withdrawals-list">
+            <tr><td colspan="6" style="text-align:center;color:var(--text2);padding:32px;">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+</main>
 </div>
 
 
@@ -2799,6 +2845,136 @@ window.saveTargetingAsTemplate = saveTargetingAsTemplate;
 window.duplicateTargeting      = duplicateTargeting;
 window.onModalContractChange   = onModalContractChange;
 window.onDevTypeChange         = typeof onDevTypeChange !== 'undefined' ? onDevTypeChange : () => {};
+
+
+// ─── Crypto Withdrawals (Admin) ──────────────────────────────────────────────
+let _autoApprove = localStorage.getItem('banerve_auto_approve') === 'true';
+
+document.getElementById('auto-approve-toggle').checked = _autoApprove;
+document.getElementById('auto-approve-label').textContent = _autoApprove ? 'Вкл' : 'Выкл';
+
+document.getElementById('auto-approve-toggle').addEventListener('change', function() {
+  _autoApprove = this.checked;
+  localStorage.setItem('banerve_auto_approve', _autoApprove);
+  document.getElementById('auto-approve-label').textContent = _autoApprove ? 'Вкл' : 'Выкл';
+  toast(_autoApprove ? 'Автоподтверждение включено' : 'Автоподтверждение выключено');
+});
+
+document.getElementById('withdraw-filter').addEventListener('change', loadWithdrawals);
+
+onPageEnter('withdrawals', { load: loadWithdrawals, render: () => loadWithdrawals() });
+
+async function loadWithdrawals() {
+  const filter = document.getElementById('withdraw-filter')?.value || 'pending';
+  let params = '?type=eq.withdrawal&order=created_at.desc';
+  if (filter !== 'all') params += `&status=eq.${filter}`;
+
+  try {
+    const payments = await db('crypto_payments', 'GET', null, params);
+    const tbody = document.getElementById('withdrawals-list');
+    if (!tbody) return;
+    if (!payments?.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:32px;">Нет заявок</td></tr>';
+      return;
+    }
+
+    const statusLabel = {
+      pending:    '<span style="color:#4d9fff;">⏳ Ожидает</span>',
+      processing: '<span style="color:#ffb347;">🔄 Обрабатывается</span>',
+      paid:       '<span style="color:var(--success);">✓ Выплачено</span>',
+      rejected:   '<span style="color:var(--error);">✗ Отклонено</span>',
+      failed:     '<span style="color:var(--error);">✗ Ошибка</span>',
+    };
+
+    tbody.innerHTML = payments.map(p => `
+      <tr>
+        <td class="mono" style="font-size:12px;">${fmtDate(p.created_at)}</td>
+        <td class="mono" style="font-size:11px; color:var(--text2);">${p.user_id?.slice(0,8)}...</td>
+        <td style="color:var(--error); font-family:'Space Mono',monospace; font-weight:700;">${p.amount_usdt} USDT</td>
+        <td style="font-size:11px; font-family:'Space Mono',monospace; color:var(--text2);">
+          <a href="https://tronscan.org/#/address/${p.wallet_address}" target="_blank" style="color:var(--accent);">
+            ${p.wallet_address ? p.wallet_address.slice(0,16) + '...' : '—'}
+          </a>
+        </td>
+        <td>${statusLabel[p.status] || p.status}</td>
+        <td>
+          ${p.status === 'pending' ? `
+            <div style="display:flex; gap:6px;">
+              <button onclick="approveWithdrawal('${p.id}', '${p.wallet_address}', ${p.amount_usdt}, '${p.user_id}')"
+                      style="background:var(--success); color:#000; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-family:'Syne',sans-serif; font-size:12px; font-weight:700;">
+                ✓ Подтвердить
+              </button>
+              <button onclick="rejectWithdrawal('${p.id}', '${p.user_id}', ${p.amount_usdt})"
+                      style="background:rgba(255,77,77,0.15); color:var(--error); border:1px solid rgba(255,77,77,0.3); padding:6px 12px; border-radius:6px; cursor:pointer; font-family:'Syne',sans-serif; font-size:12px;">
+                ✗ Отклонить
+              </button>
+            </div>
+          ` : p.tx_hash ? `<a href="https://tronscan.org/#/transaction/${p.tx_hash}" target="_blank" style="color:var(--accent); font-size:11px; font-family:'Space Mono',monospace;">${p.tx_hash.slice(0,12)}...</a>` : '—'}
+        </td>
+      </tr>`).join('');
+  } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+}
+
+window.approveWithdrawal = async function(paymentId, walletAddress, amount, userId) {
+  if (!confirm(`Подтвердить вывод ${amount} USDT на ${walletAddress}?`)) return;
+
+  try {
+    // Обновить статус → processing
+    await db('crypto_payments', 'PATCH', { status: 'processing' }, `?id=eq.${paymentId}`);
+    toast('Обрабатывается...', 'info');
+
+    // Вызов Coinremitter через Supabase Edge Function (чтобы не светить API key)
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/process-withdrawal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ payment_id: paymentId, to_address: walletAddress, amount })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      // Создать транзакцию payout
+      await db('transactions', 'POST', {
+        user_id: userId, type: 'payout',
+        amount: -amount, status: 'completed',
+        notes: `USDT withdrawal tx:${data.tx_hash || paymentId}`
+      });
+      await db('crypto_payments', 'PATCH', {
+        status: 'paid', tx_hash: data.tx_hash,
+        transaction_id: data.transaction_id
+      }, `?id=eq.${paymentId}`);
+      toast('Вывод выполнен ✓', 'success');
+    } else {
+      const err = await res.json();
+      await db('crypto_payments', 'PATCH', { status: 'failed' }, `?id=eq.${paymentId}`);
+      // Вернуть деньги
+      await db('transactions', 'POST', {
+        user_id: userId, type: 'withdrawal_cancelled',
+        amount: amount, status: 'completed',
+        notes: `Вывод отклонён: ${err.error || 'ошибка API'}`
+      });
+      throw new Error(err.error || 'Ошибка Coinremitter');
+    }
+
+    loadWithdrawals();
+  } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+};
+
+window.rejectWithdrawal = async function(paymentId, userId, amount) {
+  if (!confirm('Отклонить заявку? Средства будут возвращены на баланс паблишера.')) return;
+
+  try {
+    await db('crypto_payments', 'PATCH', { status: 'rejected' }, `?id=eq.${paymentId}`);
+    // Вернуть зарезервированную сумму
+    await db('transactions', 'POST', {
+      user_id: userId, type: 'withdrawal_cancelled',
+      amount: amount, status: 'completed',
+      notes: 'Заявка на вывод отклонена администратором'
+    });
+    toast('Заявка отклонена, средства возвращены', 'success');
+    loadWithdrawals();
+  } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+};
+
 
 </script>
 </body>
