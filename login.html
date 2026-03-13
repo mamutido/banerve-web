@@ -49,6 +49,11 @@
     .agree-row label{font-size:13px;color:var(--text2);line-height:1.5;cursor:pointer;}
     .agree-row a{color:var(--accent);text-decoration:none;}
     .agree-row a:hover{text-decoration:underline;}
+    .agree-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;}
+    .agree-row input[type=checkbox]{width:16px;height:16px;min-width:16px;margin-top:3px;accent-color:var(--accent);cursor:pointer;}
+    .agree-row label{font-size:13px;color:var(--text2);line-height:1.5;cursor:pointer;}
+    .agree-row a{color:var(--accent);text-decoration:none;}
+    .agree-row a:hover{text-decoration:underline;}
     .msg{border-radius:8px;padding:12px 14px;font-size:13px;margin-bottom:18px;display:none;line-height:1.5;}
     .msg.show{display:block;}
     .msg.error{background:rgba(255,77,77,.1);border:1px solid rgba(255,77,77,.3);color:var(--error);}
@@ -177,10 +182,10 @@
 </div>
 
 <div class="footer">
-  <a href="/cdn-cgi/l/email-protection#6a191f1a1a05181e2a080b040f181c0f440305">Обратиться в поддержку</a>
+  <a href="mailto:michael.noskov@gmail.com">Обратиться в поддержку</a>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ── Константы ────────────────────────────────────────────────────────────────
 const SUPABASE_URL      = 'https://syiguslqvexxsqncvpjs.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_NUK2SDmrmngpwoEiQyqllA_OyuoY49I';
@@ -325,6 +330,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ── Регистрация ────────────────────────────────────────────────────────
   async function doSignup() {
+    if (!document.getElementById('agree-checkbox').checked) {
+      showError('signup-error', 'Please agree to the Terms of Service and Privacy Policy');
+      return;
+    }
     if (!document.getElementById('agree-checkbox').checked) {
       showError('signup-error', 'Please agree to the Terms of Service and Privacy Policy');
       return;
