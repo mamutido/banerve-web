@@ -242,16 +242,17 @@
 </div>
 
 <script type="module">
-import { initPage, db, uploadFile, fmt, fmtUSD, fmtDate, fmtDatetime } from './shared/auth.js';
+import { initPage, db, uploadFile, fmt, fmtUSD, fmtDate, fmtDatetime, SUPABASE_URL, SUPABASE_ANON_KEY, getSession } from './shared/auth.js';
 import { initNav, onPageEnter } from './shared/store.js';
 import { renderHeader, toast, openModal, closeModal, openConfirm, emptyState, badge, copyToClipboard } from './shared/components.js';
+import { openDepositModal, loadCryptoDeposits } from './shared/crypto.js';
 
 // ─── Инициализация ─────────────────────────────────────────────────────────
 const { session, user } = await initPage({ role: null });
 
   // USDT Deposit кнопка
   document.addEventListener('click', e => {
-    if (e.target && e.target.id === 'btn-deposit-usdt') openDepositModal();
+    if (e.target && e.target.id === 'btn-deposit-usdt') openDepositModal(advertiserId);
   });
 
   // Realtime на crypto_payments
@@ -267,6 +268,7 @@ renderHeader('Advertiser', { email: user.email, showRoleSwitch: true });
 
 // Используем user.id напрямую — без таблицы advertisers
 const advertiserId = user.id;
+const token = getSession()?.access_token ?? SUPABASE_ANON_KEY;
 
 // ─── Регистрация страниц ───────────────────────────────────────────────────
 onPageEnter('dashboard',  { load: loadDashboard,  render: () => loadDashboard() });
@@ -479,98 +481,9 @@ async function loadBalance() {
         <td style="color:var(--text2); font-size:12px;">${t.notes || '—'}</td>
       </tr>`).join('');
     // Загрузить крипто-депозиты
-    loadCryptoDeposits();
+    loadCryptoDeposits(advertiserId);
 
   } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
-}
-
-// ─── USDT Deposit ──────────────────────────────────────────────────────────
-async function loadCryptoDeposits() {
-  try {
-    const payments = await db('crypto_payments', 'GET', null,
-      `?user_id=eq.${advertiserId}&type=eq.deposit&order=created_at.desc&limit=20`);
-    const tbody = document.getElementById('crypto-deposits-list');
-    if (!tbody) return;
-    if (!payments?.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:32px;">Нет пополнений</td></tr>';
-      return;
-    }
-    const statusLabel = {
-      confirmed: '<span style="color:var(--success);">✓ Зачислено</span>',
-      pending_confirmations: '<span style="color:#4d9fff;">⏳ Ожидание подтверждений</span>',
-      below_minimum: '<span style="color:var(--error);">✗ Меньше минимума</span>',
-      failed: '<span style="color:var(--error);">✗ Ошибка</span>',
-    };
-    tbody.innerHTML = payments.map(p => `
-      <tr>
-        <td class="mono">${fmtDatetime(p.created_at)}</td>
-        <td style="color:var(--success); font-family:'Space Mono',monospace;">+${p.amount_usdt} USDT</td>
-        <td>${statusLabel[p.status] || p.status}</td>
-        <td style="font-size:11px; font-family:'Space Mono',monospace;">
-          ${p.tx_hash ? `<a href="https://tronscan.org/#/transaction/${p.tx_hash}" target="_blank" style="color:var(--accent);">${p.tx_hash.slice(0,16)}...</a>` : '—'}
-        </td>
-      </tr>`).join('');
-  } catch(e) { console.warn('crypto deposits load error', e); }
-}
-
-async function openDepositModal() {
-  // Открыть модалку с вводом суммы
-  openModal('Пополнение USDT (TRC-20)', `
-    <div style="padding:8px 0;">
-      <div style="margin-bottom:20px;">
-        <label style="display:block; font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--text2); margin-bottom:8px; font-family:'Space Mono',monospace;">Сумма пополнения (USD)</label>
-        <input type="number" id="deposit-amount-input" placeholder="Минимум 5" min="5" step="1"
-               style="width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:11px 14px; color:var(--text); font-family:'Space Mono',monospace; font-size:16px; outline:none;">
-        <div style="margin-top:6px; font-size:12px; color:var(--text2); font-family:'Space Mono',monospace;">
-          Минимум: 5 USD · Зачисляется как USDT 1:1
-        </div>
-      </div>
-      <div style="background:rgba(255,107,53,0.1); border:1px solid rgba(255,107,53,0.3); border-radius:8px; padding:12px; font-size:12px; color:#ff6b35; font-family:'Space Mono',monospace; line-height:1.6;">
-        ⚠️ Оплата через сеть TRC-20. Выберите USDT TRC-20 на странице оплаты CryptoCloud.
-      </div>
-    </div>
-  `, createInvoiceAndRedirect, { saveLabel: 'Создать счёт →' });
-}
-
-async function createInvoiceAndRedirect() {
-  const amountEl = document.getElementById('deposit-amount-input');
-  const amount = parseFloat(amountEl?.value);
-  if (!amount || amount < 5) { toast('Минимальная сумма: 5 USD', 'error'); return; }
-
-  const btn = document.getElementById('_modal_save');
-  if (btn) { btn.disabled = true; btn.textContent = 'Создание счёта...'; }
-
-  try {
-    // Создать инвойс через нашу Edge Function (чтобы не светить API key)
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/create-invoice`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ amount, user_id: advertiserId })
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) { toast(data.error || 'Ошибка создания счёта', 'error'); return; }
-
-    // Записать ожидающий платёж
-    await fetch(`${SUPABASE_URL}/rest/v1/crypto_payments`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        type: 'deposit', user_id: advertiserId,
-        amount_requested: data.amount_requested || amount,
-        amount_usdt: amount, tx_hash: data.invoice_id,
-        status: 'pending_confirmations', network: 'TRC20'
-      })
-    });
-
-    // Перенаправить на страницу оплаты CryptoCloud
-    window.open(data.pay_url, '_blank');
-    closeModal();
-    toast('Счёт создан! Оплатите на открывшейся странице.', 'info');
-  } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
-  finally { if (btn) { btn.disabled = false; btn.textContent = 'Создать счёт →'; } }
 }
 
 // ─── Transactions page ──────────────────────────────────────────────────────
