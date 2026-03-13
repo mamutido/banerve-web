@@ -563,7 +563,7 @@ window.setPeriod = function(days, btn) {
   loadStats();
 };
 
-window.loadStats = async function() {
+async function loadStats() {
   const from = document.getElementById('stats-from').value;
   const to   = document.getElementById('stats-to').value;
   if (!from || !to) return;
@@ -676,6 +676,7 @@ async function loadPayouts() {
 
 // Экспорт для HTML onclick
 window.copyToClipboard = copyToClipboard;
+window.loadStats = loadStats;
 
 // Инициализировать период по умолчанию
 const _to   = new Date();
