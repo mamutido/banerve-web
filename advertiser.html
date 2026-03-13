@@ -244,7 +244,7 @@
 <script type="module">
 import { initPage, db, uploadFile, fmt, fmtUSD, fmtDate, fmtDatetime } from './shared/auth.js';
 import { initNav, onPageEnter } from './shared/store.js';
-import { renderHeader, toast, openConfirm, emptyState, badge, copyToClipboard } from './shared/components.js';
+import { renderHeader, toast, openModal, closeModal, openConfirm, emptyState, badge, copyToClipboard } from './shared/components.js';
 
 // ─── Инициализация ─────────────────────────────────────────────────────────
 const { session, user } = await initPage({ role: null });
