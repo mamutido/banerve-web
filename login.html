@@ -331,11 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // ── Регистрация ────────────────────────────────────────────────────────
   async function doSignup() {
     if (!document.getElementById('agree-checkbox').checked) {
-      showError('signup-error', 'Please agree to the Terms of Service and Privacy Policy');
-      return;
-    }
-    if (!document.getElementById('agree-checkbox').checked) {
-      showError('signup-error', 'Please agree to the Terms of Service and Privacy Policy');
+      showError('Please agree to the Terms of Service and Privacy Policy');
       return;
     }
     const email = document.getElementById('signup-email').value.trim();
