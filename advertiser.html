@@ -272,7 +272,7 @@ const advertiserId = user.id;
 onPageEnter('dashboard',  { load: loadDashboard,  render: () => loadDashboard() });
 onPageEnter('campaigns',  { load: loadCampaigns,  render: () => loadCampaigns(),  realtime: ['contracts'] });
 onPageEnter('creatives',  { load: loadCreatives,  render: () => loadCreatives(),  realtime: ['creatives'] });
-onPageEnter('balance',       { load: async () => { await initDepositWallet(); await loadBalance(); },       render: () => loadBalance(),       realtime: ['transactions'] });
+onPageEnter('balance',       { load: loadBalance,       render: () => loadBalance(),       realtime: ['transactions'] });
 onPageEnter('transactions',  { load: loadTransactions,  render: () => loadTransactions(),  realtime: ['transactions'] });
 
 initNav('dashboard');
@@ -485,16 +485,6 @@ async function loadBalance() {
 }
 
 // ─── USDT Deposit ──────────────────────────────────────────────────────────
-let _depositAddress = null;
-
-async function initDepositWallet() {
-  const { data: wallet } = await window._supabaseRaw('crypto_wallets',
-    `?user_id=eq.${advertiserId}&role=eq.advertiser&select=deposit_address`);
-  if (wallet?.[0]?.deposit_address) {
-    _depositAddress = wallet[0].deposit_address;
-  }
-}
-
 async function loadCryptoDeposits() {
   try {
     const payments = await db('crypto_payments', 'GET', null,
@@ -523,34 +513,64 @@ async function loadCryptoDeposits() {
   } catch(e) { console.warn('crypto deposits load error', e); }
 }
 
-function openDepositModal() {
-  if (!_depositAddress) {
-    toast('Адрес для пополнения не найден. Обратитесь в поддержку.', 'error');
-    return;
-  }
+async function openDepositModal() {
+  // Открыть модалку с вводом суммы
   openModal('Пополнение USDT (TRC-20)', `
-    <div style="text-align:center; padding:8px 0;">
-      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:20px;">
-        <div id="qr-container" style="display:flex; justify-content:center; margin-bottom:16px;">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(_depositAddress)}" 
-               style="border-radius:8px;" width="180" height="180" alt="QR">
+    <div style="padding:8px 0;">
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--text2); margin-bottom:8px; font-family:'Space Mono',monospace;">Сумма пополнения (USD)</label>
+        <input type="number" id="deposit-amount-input" placeholder="Минимум 5" min="5" step="1"
+               style="width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:11px 14px; color:var(--text); font-family:'Space Mono',monospace; font-size:16px; outline:none;">
+        <div style="margin-top:6px; font-size:12px; color:var(--text2); font-family:'Space Mono',monospace;">
+          Минимум: 5 USD · Зачисляется как USDT 1:1
         </div>
-        <div style="font-family:'Space Mono',monospace; font-size:12px; color:var(--text2); word-break:break-all; margin-bottom:12px;">${_depositAddress}</div>
-        <button onclick="navigator.clipboard.writeText('${_depositAddress}').then(()=>toast('Адрес скопирован'))" 
-                style="background:var(--surface); border:1px solid var(--border); color:var(--text); padding:8px 16px; border-radius:6px; cursor:pointer; font-family:'Syne',sans-serif; font-size:13px; font-weight:600;">
-          📋 Скопировать адрес
-        </button>
       </div>
-      <div style="font-size:13px; color:var(--text2); line-height:1.7; text-align:left;">
-        ✅ Переведите минимум <strong style="color:var(--text);">5 USDT (TRC-20)</strong> на ваш персональный адрес.<br>
-        ✅ Зачисление после <strong style="color:var(--text);">3 подтверждений</strong> (~1-3 мин).<br>
-        ✅ Комиссия Coinremitter: <strong style="color:var(--text);">0.25%</strong> — удерживается автоматически.
-      </div>
-      <div style="margin-top:16px; background:rgba(255,107,53,0.1); border:1px solid rgba(255,107,53,0.3); border-radius:8px; padding:12px; font-size:12px; color:#ff6b35; font-family:'Space Mono',monospace; line-height:1.6; text-align:left;">
-        ⚠️ Отправляйте строго через сеть TRC-20. Средства, отправленные через другие сети (ERC-20, BEP-20), будут безвозвратно утеряны.
+      <div style="background:rgba(255,107,53,0.1); border:1px solid rgba(255,107,53,0.3); border-radius:8px; padding:12px; font-size:12px; color:#ff6b35; font-family:'Space Mono',monospace; line-height:1.6;">
+        ⚠️ Оплата через сеть TRC-20. Выберите USDT TRC-20 на странице оплаты CryptoCloud.
       </div>
     </div>
-  `, null, { showSave: false });
+  `, createInvoiceAndRedirect, { saveLabel: 'Создать счёт →' });
+}
+
+async function createInvoiceAndRedirect() {
+  const amountEl = document.getElementById('deposit-amount-input');
+  const amount = parseFloat(amountEl?.value);
+  if (!amount || amount < 5) { toast('Минимальная сумма: 5 USD', 'error'); return; }
+
+  const btn = document.getElementById('_modal_save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Создание счёта...'; }
+
+  try {
+    // Создать инвойс через нашу Edge Function (чтобы не светить API key)
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/create-invoice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ amount, user_id: advertiserId })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) { toast(data.error || 'Ошибка создания счёта', 'error'); return; }
+
+    // Записать ожидающий платёж
+    await fetch(`${SUPABASE_URL}/rest/v1/crypto_payments`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        type: 'deposit', user_id: advertiserId,
+        amount_requested: data.amount_requested || amount,
+        amount_usdt: amount, tx_hash: data.invoice_id,
+        status: 'pending_confirmations', network: 'TRC20'
+      })
+    });
+
+    // Перенаправить на страницу оплаты CryptoCloud
+    window.open(data.pay_url, '_blank');
+    closeModal();
+    toast('Счёт создан! Оплатите на открывшейся странице.', 'info');
+  } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Создать счёт →'; } }
 }
 
 // ─── Transactions page ──────────────────────────────────────────────────────

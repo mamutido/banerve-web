@@ -2900,7 +2900,7 @@ async function loadWithdrawals() {
         <td>
           ${p.status === 'pending' ? `
             <div style="display:flex; gap:6px;">
-              <button onclick="approveWithdrawal('${p.id}', '${p.wallet_address}', ${p.amount_usdt}, '${p.user_id}')"
+              <button onclick="approveWithdrawal('${p.id}', '${p.wallet_address}', ${p.amount_usdt}, '${p.user_id}', '${p.user_id}')"
                       style="background:var(--success); color:#000; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-family:'Syne',sans-serif; font-size:12px; font-weight:700;">
                 ✓ Подтвердить
               </button>
@@ -2915,7 +2915,7 @@ async function loadWithdrawals() {
   } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
 }
 
-window.approveWithdrawal = async function(paymentId, walletAddress, amount, userId) {
+window.approveWithdrawal = async function(paymentId, walletAddress, amount, userId, publisherUserId) {
   if (!confirm(`Подтвердить вывод ${amount} USDT на ${walletAddress}?`)) return;
 
   try {
@@ -2927,7 +2927,7 @@ window.approveWithdrawal = async function(paymentId, walletAddress, amount, user
     const res = await fetch(`${SUPABASE_URL}/functions/v1/process-withdrawal`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ payment_id: paymentId, to_address: walletAddress, amount })
+      body: JSON.stringify({ payment_id: paymentId, to_address: walletAddress, amount, publisher_user_id: publisherUserId || userId })
     });
 
     if (res.ok) {
@@ -2936,7 +2936,7 @@ window.approveWithdrawal = async function(paymentId, walletAddress, amount, user
       await db('transactions', 'POST', {
         user_id: userId, type: 'payout',
         amount: -amount, status: 'completed',
-        notes: `USDT withdrawal tx:${data.tx_hash || paymentId}`
+        notes: `USDT withdrawal tx:${data.network_tx_hash || paymentId}`
       });
       await db('crypto_payments', 'PATCH', {
         status: 'paid', tx_hash: data.tx_hash,

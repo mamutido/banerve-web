@@ -18,7 +18,7 @@
     .logo{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:40px;}
     .logo span{color:var(--accent);}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
-      padding:40px;width:100%;max-width:420px;}
+      padding:40px 40px 48px;width:100%;max-width:420px;}
     .tabs{display:flex;margin-bottom:28px;background:var(--surface2);border-radius:8px;padding:4px;}
     .tab{flex:1;padding:9px;text-align:center;cursor:pointer;border-radius:6px;font-size:13px;
       font-weight:700;color:var(--text2);border:none;background:none;font-family:'Syne',sans-serif;transition:all .15s;}
@@ -41,9 +41,14 @@
       background:var(--accent);color:#000;transition:all .15s;margin-top:20px;}
     .btn:hover:not(:disabled){background:#d4eb3a;transform:translateY(-1px);}
     .btn:disabled{opacity:.5;cursor:not-allowed;}
-    .btn-google{background:var(--surface2);color:var(--text);border:1px solid var(--border);
+    .btn-google{background:var(--surface2);color:var(--text);border:1px solid var(--border);font-weight:800;
       display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0;margin-top:12px;letter-spacing:0;}
     .btn-google:hover:not(:disabled){background:#222;transform:translateY(-1px);}
+    .agree-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;}
+    .agree-row input[type=checkbox]{width:16px;height:16px;min-width:16px;margin-top:3px;accent-color:var(--accent);cursor:pointer;}
+    .agree-row label{font-size:13px;color:var(--text2);line-height:1.5;cursor:pointer;}
+    .agree-row a{color:var(--accent);text-decoration:none;}
+    .agree-row a:hover{text-decoration:underline;}
     .msg{border-radius:8px;padding:12px 14px;font-size:13px;margin-bottom:18px;display:none;line-height:1.5;}
     .msg.show{display:block;}
     .msg.error{background:rgba(255,77,77,.1);border:1px solid rgba(255,77,77,.3);color:var(--error);}
@@ -114,7 +119,7 @@
         <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
         <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
       </svg>
-      Войти через Google
+      Войти через <span style="font-family:Arial,Helvetica,sans-serif;font-weight:700;letter-spacing:0;">Google</span>
     </button>
   </div>
 
@@ -150,6 +155,13 @@
       </div>
     </div>
     <div class="hint">После регистрации на ваш email придёт письмо с подтверждением.</div>
+    <div class="agree-row">
+      <input type="checkbox" id="agree-checkbox">
+      <label for="agree-checkbox">
+        I agree to the <a href="terms.html" target="_blank">Terms of Service</a>
+        and <a href="privacy.html" target="_blank">Privacy Policy</a>
+      </label>
+    </div>
     <button class="btn" id="signup-btn">Создать аккаунт →</button>
     <div class="or-divider"><div></div><span>или</span><div></div></div>
     <button class="btn btn-google" id="google-signup-btn" type="button">
@@ -159,16 +171,16 @@
         <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
         <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
       </svg>
-      Зарегистрироваться через Google
+      Зарегистрироваться через <span style="font-family:Arial,Helvetica,sans-serif;font-weight:700;letter-spacing:0;">Google</span>
     </button>
   </div>
 </div>
 
 <div class="footer">
-  <a href="mailto:support@banerve.io">Обратиться в поддержку</a>
+  <a href="/cdn-cgi/l/email-protection#6a191f1a1a05181e2a080b040f181c0f440305">Обратиться в поддержку</a>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── Константы ────────────────────────────────────────────────────────────────
 const SUPABASE_URL      = 'https://syiguslqvexxsqncvpjs.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_NUK2SDmrmngpwoEiQyqllA_OyuoY49I';
@@ -186,7 +198,7 @@ function redirect(session) {
 
 // ── Google OAuth — запустить ─────────────────────────────────────────────────
 function startGoogleOAuth(role) {
-  const redirectTo = window.location.origin + '/login.html?role=' + role;
+  const redirectTo = 'https://mamutido.github.io/banerve-web/login.html?role=' + role;
   window.location.href = SUPABASE_URL + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(redirectTo);
 }
 
@@ -313,6 +325,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ── Регистрация ────────────────────────────────────────────────────────
   async function doSignup() {
+    if (!document.getElementById('agree-checkbox').checked) {
+      showError('signup-error', 'Please agree to the Terms of Service and Privacy Policy');
+      return;
+    }
     const email = document.getElementById('signup-email').value.trim();
     const pwd   = document.getElementById('signup-password').value;
     const pwd2  = document.getElementById('signup-password2').value;
@@ -417,11 +433,4 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       if (res.ok) { showSuccess('Письмо с инструкцией отправлено на ' + email); }
       else        { showError('Не удалось отправить письмо'); }
-    } catch { showError('Ошибка соединения'); }
-    finally { link.textContent = 'Забыл пароль?'; }
-  });
-
-}); // DOMContentLoaded
-</script>
-</body>
-</html>
+    } catch { showError('Ошибк

@@ -769,6 +769,14 @@ document.getElementById('btn-request-withdraw').addEventListener('click', async 
 
     if (amount >= 500 && !confirm(`Вы запрашиваете вывод ${amount} USDT. Продолжить?`)) return;
 
+    // Проверить rate limit на стороне фронта (финальная проверка — в Edge Function)
+    const since = new Date(Date.now() - 24*60*60*1000).toISOString();
+    const rlRes = await fetch(`${SUPABASE_URL}/rest/v1/crypto_payments?user_id=eq.${publisherId}&type=eq.withdrawal&status=in.(paid,processing)&created_at=gte.${since}&select=id`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact' }
+    });
+    const rlCount = parseInt(rlRes.headers.get('content-range')?.split('/')[1] || '0');
+    if (rlCount >= 5) { toast('Превышен лимит: максимум 5 выводов в сутки', 'error'); return; }
+
     const res = await fetch(`${SUPABASE_URL}/rest/v1/crypto_payments`, {
       method: 'POST',
       headers: {
@@ -830,7 +838,7 @@ async function loadCryptoWithdrawals() {
         <td style="color:var(--error);font-family:'Space Mono',monospace;">-${p.amount_usdt} USDT</td>
         <td>${statusLabel[p.status] || p.status}</td>
         <td style="font-size:11px;font-family:'Space Mono',monospace;">
-          ${p.tx_hash ? `<a href="https://tronscan.org/#/transaction/${p.tx_hash}" target="_blank" style="color:var(--accent);">${p.tx_hash.slice(0,16)}...</a>` : '—'}
+          ${p.network_tx_hash ? `<a href="https://tronscan.org/#/transaction/${p.network_tx_hash}" target="_blank" style="color:var(--accent);">${p.network_tx_hash.slice(0,16)}...</a>` : (p.tx_hash ? `<span style="color:var(--text2);font-size:11px;">invoice:${p.tx_hash.slice(0,12)}...</span>` : '—')}
         </td>
       </tr>`).join('');
   } catch(e) { console.warn('withdrawals load error', e); }
