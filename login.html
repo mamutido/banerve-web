@@ -438,4 +438,11 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       if (res.ok) { showSuccess('Письмо с инструкцией отправлено на ' + email); }
       else        { showError('Не удалось отправить письмо'); }
-    } catch { showError('Ошибк
+    } catch { showError('Ошибка соединения с сервером'); }
+    finally { link.textContent = 'Забыл пароль?'; }
+  });
+
+});
+</script>
+</body>
+</html>
